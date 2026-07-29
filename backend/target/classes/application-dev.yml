@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:15432/john-ecommerce
+    username: john-ecommerce
+    password: john-ecommerce-123
+
+logging:
+  level:
+    com.john.ecommerce: DEBUG
