@@ -1,0 +1,14 @@
+**/target/
+**/node_modules/
+**/dist/
+**/.idea/
+*.iml
+.DS_Store
+.env
+.env.*
+!.env.example
+*.log
+.vscode/
+apps/*/.vite/
+apps/*/dist/
+backend/.idea/

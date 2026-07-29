@@ -1,0 +1,43 @@
+package com.john.ecommerce.module.fulfillment.controller;
+
+import com.john.ecommerce.common.module.ModuleCodes;
+import com.john.ecommerce.common.module.RequiresModule;
+import com.john.ecommerce.common.result.R;
+import com.john.ecommerce.module.fulfillment.dto.LogisticsCreateDTO;
+import com.john.ecommerce.module.fulfillment.dto.LogisticsVO;
+import com.john.ecommerce.module.fulfillment.dto.LogisticsWebhookDTO;
+import com.john.ecommerce.module.fulfillment.service.LogisticsService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/logistics")
+@RequiredArgsConstructor
+@RequiresModule(ModuleCodes.FULFILLMENT)
+public class LogisticsController {
+
+    private final LogisticsService logisticsService;
+
+    @PostMapping
+    public R<LogisticsVO> createShipment(@Valid @RequestBody LogisticsCreateDTO dto) {
+        return R.ok(logisticsService.createShipment(dto));
+    }
+
+    @GetMapping("/order/{orderId}")
+    public R<LogisticsVO> getByOrderId(@PathVariable Long orderId) {
+        return R.ok(logisticsService.getByOrderId(orderId));
+    }
+
+    @PostMapping("/webhook/{trackingNo}")
+    public R<Void> webhook(@PathVariable String trackingNo, @RequestBody LogisticsWebhookDTO dto) {
+        logisticsService.webhook(trackingNo, dto);
+        return R.ok(null);
+    }
+
+    @PutMapping("/confirm-receipt/{orderId}")
+    public R<Void> confirmReceipt(@PathVariable Long orderId) {
+        logisticsService.confirmReceipt(orderId);
+        return R.ok(null);
+    }
+}

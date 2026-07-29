@@ -1,0 +1,52 @@
+---
+description: john-e-commerce 多业态电商项目记忆与开发约定
+alwaysApply: true
+---
+
+# john-e-commerce
+
+多租户、多业态（B2C/B2B/B2B2C/团购/点餐/分销）电商 **Spring Boot 单体**。Schema 先行；`apps/`、`deploy/` 为空占位，勿擅自建前端/部署除非明确要求。
+
+## 技术栈
+
+- Java 17 · Spring Boot 3.3.6 · MyBatis-Plus 3.5.9 · PostgreSQL · Redis · JWT · MinIO · springdoc
+- 端口 `8020`，context-path `/api`；CORS 规划 `3020/3021`
+- SQL：`scripts/sql/V00x__*.sql`（**不接 Flyway/Liquibase**；改 SQL 后目标库一次性执行）
+
+## 目录与域
+
+| 路径 | 职责 | 状态 |
+|------|------|------|
+| `module/user` | 登录/用户/地址 | API 完成 |
+| `module/product` | 品牌/类目/SPU/SKU/价格规则/购物车 | CRUD 完成 |
+| `module/trade` | 拆单/状态机/订单组/退款实体 | 下单主路径完成 |
+| `module/activity` | 营销活动 + PromoEngine | CRUD + preview |
+| `module/tenant` | 租户/模块开通/ModuleDef | DB FeatureGate |
+| `module/merchant` | 商家入驻审核 | API 完成 |
+| `module/content` | 页面模板/Banner/导航 + PublicController | CRUD 完成 |
+| `module/statistics` | 聚合统计 overview | API 完成 |
+| `module/fulfillment/payment` | 对应 SQL 域 | 骨架/占位 |
+| `common/` + `config/` | R、租户上下文、Security、MP、FeatureGate | 已搭 |
+
+表前缀 `t_`；审计字段 `created_at/updated_at`（**毫秒 Long**）、`created_by/updated_by`、`idempotent_key`、`delete_flag`（0/1 逻辑删）；业务表带 `tenant_id`。
+
+## 编码约定
+
+- 模块布局：`module/<domain>/{controller,dto,entity,mapper,service}`（可加 `service/engine|handler|statemachine|…`）
+- Entity 继承 `BaseEntity`（`deleteFlag` + `@TableLogic`）；JSONB 用 `JacksonTypeHandler` + `autoResultMap`
+- API 返回 `R<T>`；业务失败抛 `BizException`；校验文案可中文
+- 租户：JWT → `TenantContext` / `UserContext` → MP `TenantLineInnerInterceptor`；勿手写跨租户查业务表
+- 模块开关：`@RequiresModule(ModuleCodes.*)` + `FeatureGateInterceptor` + `TenantModuleService`（`@Primary` 实现 `TenantModuleChecker`）
+- 跨模块经 Facade（如 `InventoryFacade`、`PromoEngine`），避免环依赖
+- 多业态差异优先 JSONB（`extra` / `rule_config` / `business_types`），少加列
+- 新表：按序追加 `scripts/sql/V0xx__….sql`，保持租户+审计+delete_flag 一致
+- 优先填空模块骨架，不另起顶层包；不主动写 README
+
+## 已知坑（改代码时对齐）
+
+1. Java 包名使用 `com.john.ecommerce.module.*`（目录 `module/<domain>`）
+2. yml `logic-delete-field: delete_flag` 与 `BaseEntity.deleteFlag` 对齐
+3. Security `permitAll` 路径勿重复 `/api`（context-path 已是 `/api`）
+4. `backend/target/` 勿提交构建产物
+5. 营销域命名统一 **activity**（非 campaign）；库存下沉 fulfillment 仓维度，SKU 无 stock 字段
+6. 前端 `apps/mall`(3020) / `apps/admin`(3021)：Vue3+Vite+TS；proxy `/api` → 8020；模块菜单由 `/tenant/modules` 驱动

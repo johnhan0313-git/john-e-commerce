@@ -4,7 +4,64 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="44ddfe63-93d8-4ceb-8d69-eb195c529f4b" name="Changes" comment="" />
+    <list default="true" id="44ddfe63-93d8-4ceb-8d69-eb195c529f4b" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/common/base/BaseEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/common/base/BaseEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/common/enums/CampaignType.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/common/enums/OrderStatus.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/common/enums/OrderStatus.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/config/MyBatisPlusConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/config/MyBatisPlusConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/config/SecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/config/WebMvcConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/config/WebMvcConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-campaign/dto/CampaignCreateDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-campaign/dto/CampaignVO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-campaign/entity/Campaign.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-campaign/entity/CampaignParticipation.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-campaign/entity/CampaignScope.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-campaign/mapper/CampaignMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-campaign/mapper/CampaignParticipationMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-campaign/mapper/CampaignScopeMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-product/controller/ProductController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-product/dto/SpuCreateDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-product/dto/SpuVO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-product/entity/Category.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-product/entity/PriceRule.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-product/entity/Sku.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-product/entity/Spu.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-product/mapper/CategoryMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-product/mapper/PriceRuleMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-product/mapper/SkuMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-product/mapper/SpuMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-product/service/ProductService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-trade/controller/OrderController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-trade/dto/OrderCreateDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-trade/dto/OrderVO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-trade/entity/Order.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-trade/entity/OrderItem.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-trade/mapper/OrderItemMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-trade/mapper/OrderMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-trade/service/OrderService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-user/controller/AuthController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-user/controller/UserController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-user/dto/LoginDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-user/dto/LoginVO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-user/dto/UserCreateDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-user/dto/UserVO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-user/entity/User.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-user/entity/UserAddress.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-user/mapper/UserAddressMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-user/mapper/UserMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/john/ecommerce/module-user/service/UserService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../scripts/sql/V001__init_tenant.sql" beforeDir="false" afterPath="$PROJECT_DIR$/../scripts/sql/V001__init_tenant.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../scripts/sql/V002__init_user.sql" beforeDir="false" afterPath="$PROJECT_DIR$/../scripts/sql/V002__init_user.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../scripts/sql/V003__init_product.sql" beforeDir="false" afterPath="$PROJECT_DIR$/../scripts/sql/V003__init_product.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../scripts/sql/V004__init_trade.sql" beforeDir="false" afterPath="$PROJECT_DIR$/../scripts/sql/V004__init_trade.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../scripts/sql/V005__init_campaign.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../scripts/sql/V006__init_merchant.sql" beforeDir="false" afterPath="$PROJECT_DIR$/../scripts/sql/V006__init_merchant.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../scripts/sql/V007__init_fulfillment.sql" beforeDir="false" afterPath="$PROJECT_DIR$/../scripts/sql/V007__init_fulfillment.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../scripts/sql/V008__init_payment.sql" beforeDir="false" afterPath="$PROJECT_DIR$/../scripts/sql/V008__init_payment.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../scripts/sql/V009__init_content.sql" beforeDir="false" afterPath="$PROJECT_DIR$/../scripts/sql/V009__init_content.sql" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -88,7 +145,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1785249583827</updated>
-      <workItem from="1785249586509" duration="696000" />
+      <workItem from="1785249586509" duration="1144000" />
     </task>
     <servers />
   </component>

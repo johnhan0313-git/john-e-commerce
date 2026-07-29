@@ -13,8 +13,18 @@ public enum OrderStatus {
     COMPLETED(4, "已完成"),
     CANCELLED(5, "已取消"),
     REFUNDING(6, "退款中"),
-    REFUNDED(7, "已退款");
+    REFUNDED(7, "已退款"),
+    PARTIAL_SHIPPED(8, "部分发货");
 
     private final int code;
     private final String label;
+
+    public static OrderStatus of(int code) {
+        for (OrderStatus s : values()) {
+            if (s.code == code) {
+                return s;
+            }
+        }
+        throw new IllegalArgumentException("unknown order status: " + code);
+    }
 }

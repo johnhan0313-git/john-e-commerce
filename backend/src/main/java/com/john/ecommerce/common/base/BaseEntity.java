@@ -2,6 +2,7 @@ package com.john.ecommerce.common.base;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
+
 import java.io.Serializable;
 
 @Data
@@ -25,4 +26,8 @@ public abstract class BaseEntity implements Serializable {
     private Long updatedBy;
 
     private String idempotentKey;
+
+    /** 0=正常 1=已删除 */
+    @TableLogic
+    private Integer deleteFlag;
 }
