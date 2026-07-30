@@ -6,7 +6,8 @@ import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.john.ecommerce.common.base.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import java.util.Map;
+
+import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -15,8 +16,9 @@ public class ModuleDef extends BaseEntity {
     private String moduleCode;
     private String moduleName;
     private String description;
+    /** JSON array of dependency module codes, e.g. ["tenant","product"] */
     @TableField(typeHandler = JacksonTypeHandler.class)
-    private Map<String, Object> dependencies;
+    private List<String> dependencies;
     private Integer defaultEnabled;
     private Integer sortOrder;
     private Integer status;

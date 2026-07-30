@@ -8,10 +8,11 @@ export default defineConfig({
     alias: { '@': resolve(__dirname, 'src') }
   },
   server: {
+    host: true,
     port: 3021,
     proxy: {
       '/api': {
-        target: 'http://localhost:8020',
+        target: 'http://127.0.0.1:8020',
         changeOrigin: true
       }
     }
