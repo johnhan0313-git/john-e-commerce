@@ -15,6 +15,7 @@ This project does **not** use Flyway or Liquibase. Schema changes are maintained
    - `V007__init_fulfillment.sql`
    - `V008__init_payment.sql`
    - `V009__init_content.sql`
+   - `V010__seed_dev_admin.sql`（演示租户 + 管理员，本地开发用）
 
 Example:
 

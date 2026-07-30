@@ -12,3 +12,4 @@
 apps/*/.vite/
 apps/*/dist/
 backend/.idea/
+.run/

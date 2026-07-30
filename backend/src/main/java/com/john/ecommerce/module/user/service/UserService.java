@@ -31,8 +31,7 @@ public class UserService {
     private long jwtExpireMs;
 
     public LoginVO login(LoginDTO dto) {
-        User user = userMapper.selectOne(
-                new LambdaQueryWrapper<User>().eq(User::getPhone, dto.getPhone()));
+        User user = userMapper.selectByPhone(dto.getPhone());
         if (user == null || !passwordEncoder.matches(dto.getPassword(), user.getPasswordHash())) {
             throw new BizException("手机号或密码错误");
         }
