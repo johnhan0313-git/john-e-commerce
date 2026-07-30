@@ -1,0 +1,61 @@
+package com.john.ecommerce.module.trade.service.split;
+
+import com.john.ecommerce.module.product.entity.Sku;
+import com.john.ecommerce.module.product.entity.Spu;
+import org.junit.jupiter.api.Test;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class OrderSplitterTest {
+
+    private final OrderSplitter splitter = new OrderSplitter();
+
+    @Test
+    void splitsByMerchantKeepingDefaultWarehouse() {
+        OrderSplitBucket.SplitLine a = line(10L, 1L);
+        OrderSplitBucket.SplitLine b = line(10L, 2L);
+        OrderSplitBucket.SplitLine c = line(20L, 3L);
+
+        List<OrderSplitBucket> buckets = splitter.split(List.of(a, b, c));
+
+        assertThat(buckets).hasSize(2);
+        assertThat(buckets.get(0).getMerchantId()).isEqualTo(10L);
+        assertThat(buckets.get(0).getWarehouseId()).isEqualTo(0L);
+        assertThat(buckets.get(0).getLines()).hasSize(2);
+        assertThat(buckets.get(0).getSplitReason()).isEqualTo("MERCHANT");
+
+        assertThat(buckets.get(1).getMerchantId()).isEqualTo(20L);
+        assertThat(buckets.get(1).getLines()).hasSize(1);
+    }
+
+    @Test
+    void nullMerchantGoesToDefaultBucket() {
+        OrderSplitBucket.SplitLine line = line(null, 9L);
+        List<OrderSplitBucket> buckets = splitter.split(List.of(line));
+        assertThat(buckets).hasSize(1);
+        assertThat(buckets.get(0).getMerchantId()).isEqualTo(0L);
+        assertThat(buckets.get(0).getSplitReason()).isEqualTo("DEFAULT");
+    }
+
+    private static OrderSplitBucket.SplitLine line(Long merchantId, Long skuId) {
+        Spu spu = new Spu();
+        spu.setId(skuId + 100);
+        spu.setMerchantId(merchantId);
+        Sku sku = new Sku();
+        sku.setId(skuId);
+        sku.setSpuId(spu.getId());
+        sku.setPrice(BigDecimal.TEN);
+
+        OrderSplitBucket.SplitLine line = new OrderSplitBucket.SplitLine();
+        line.setSpu(spu);
+        line.setSku(sku);
+        line.setQuantity(1);
+        line.setUnitPrice(BigDecimal.TEN);
+        line.setDiscountAmount(BigDecimal.ZERO);
+        line.setPayAmount(BigDecimal.TEN);
+        return line;
+    }
+}

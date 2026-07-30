@@ -1,0 +1,32 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8020:8020"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:15432/john-ecommerce
+      SPRING_DATASOURCE_USERNAME: john-ecommerce
+      SPRING_DATASOURCE_PASSWORD: john-ecommerce-123
+      SPRING_REDIS_HOST: host.docker.internal
+      SPRING_REDIS_PORT: "16379"
+      SPRING_REDIS_DATABASE: "6"
+      MINIO_ENDPOINT: http://host.docker.internal:19000
+      JWT_SECRET: john-ecommerce-dev-jwt-secret-change-me-32b+
+      CORS_ORIGINS: http://localhost:3020,http://localhost:3021
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  mall:
+    build: ./apps/mall
+    ports:
+      - "3020:80"
+    depends_on:
+      - backend
+
+  admin:
+    build: ./apps/admin
+    ports:
+      - "3021:80"
+    depends_on:
+      - backend

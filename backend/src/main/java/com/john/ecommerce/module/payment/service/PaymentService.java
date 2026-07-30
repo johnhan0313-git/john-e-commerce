@@ -2,6 +2,8 @@ package com.john.ecommerce.module.payment.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.john.ecommerce.common.context.TenantContext;
+import com.john.ecommerce.common.enums.OrderStatus;
+import com.john.ecommerce.common.enums.PayStatus;
 import com.john.ecommerce.common.exception.BizException;
 import com.john.ecommerce.module.payment.channel.PayChannel;
 import com.john.ecommerce.module.payment.channel.PaymentContext;
@@ -98,9 +100,15 @@ public class PaymentService {
                 BigDecimal newPaid = (order.getPaidAmount() != null ? order.getPaidAmount() : BigDecimal.ZERO)
                         .add(item.getAmount());
                 order.setPaidAmount(newPaid);
-                order.setPayStatus(newPaid.compareTo(order.getPayAmount()) >= 0 ? 2 : 1);
+                boolean fullyPaid = newPaid.compareTo(order.getPayAmount()) >= 0;
+                order.setPayStatus(fullyPaid ? PayStatus.PAID.getCode() : PayStatus.PARTIAL.getCode());
                 order.setPayNo(payment.getPayNo());
                 order.setPayTime(payment.getPaidAt());
+                // 付清且仍为待支付时推进订单状态，便于后续发货等状态机流转
+                if (fullyPaid && order.getStatus() != null
+                        && order.getStatus() == OrderStatus.PENDING.getCode()) {
+                    order.setStatus(OrderStatus.PAID.getCode());
+                }
                 orderMapper.updateById(order);
             }
 

@@ -1,0 +1,90 @@
+name: john-e-commerce
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      extra_hosts:
+        - "host.docker.internal:host-gateway"
+      args:
+        MAVEN_MIRROR_URL: ${MAVEN_MIRROR_URL:-https://maven.aliyun.com/repository/public}
+        HTTP_PROXY: ${BUILD_HTTP_PROXY:-}
+        HTTPS_PROXY: ${BUILD_HTTPS_PROXY:-}
+        NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12}
+    container_name: john-e-commerce-backend-1
+    ports:
+      - "8020:8020"
+    networks:
+      - default
+      - john-postgresql_default
+      - john-redis_default
+      - john-minio_default
+      - john-nginx_default
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://john-postgresql:5432/john-ecommerce
+      SPRING_DATASOURCE_USERNAME: john-ecommerce
+      SPRING_DATASOURCE_PASSWORD: john-ecommerce-123
+      SPRING_REDIS_HOST: john-redis
+      SPRING_REDIS_PORT: "6379"
+      SPRING_REDIS_DATABASE: "6"
+      JWT_SECRET: ${JWT_SECRET:-john-ecommerce-prod-jwt-secret-change-me-32b+}
+      MINIO_ENDPOINT: http://john-minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: john-ecommerce
+      # 生产走 nginx 同源反代(mall/eadmin 域名下 /api → backend),CORS 仅兜底
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://mall.cool-app.me,https://eadmin.cool-app.me,http://mall.cool-app.me,http://eadmin.cool-app.me}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75.0}
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+      NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,john-postgresql,john-minio,john-redis,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  mall:
+    build:
+      context: ./apps/mall
+      dockerfile: Dockerfile
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmmirror.com}
+    container_name: john-e-commerce-mall-1
+    ports:
+      - "3020:80"
+    networks:
+      - default
+      - john-nginx_default
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: ./apps/admin
+      dockerfile: Dockerfile
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmmirror.com}
+    container_name: john-e-commerce-admin-1
+    ports:
+      - "3021:80"
+    networks:
+      - default
+      - john-nginx_default
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  default:
+    name: john-e-commerce_default
+  john-postgresql_default:
+    external: true
+  john-redis_default:
+    external: true
+  john-minio_default:
+    external: true
+  john-nginx_default:
+    external: true

@@ -1,0 +1,41 @@
+server:
+  servlet:
+    context-path: /
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  jackson:
+    default-property-inclusion: non_null
+
+# Defaults when Docker/Testcontainers unavailable — local john-server ports
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:15432/john-ecommerce
+    username: john-ecommerce
+    password: john-ecommerce-123
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      data-source-properties:
+        stringtype: unspecified
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 16379
+      database: 15
+
+logging:
+  level:
+    com.john.ecommerce: INFO
+    org.testcontainers: INFO
+
+app:
+  jwt:
+    secret: john-ecommerce-test-jwt-secret-change-me-32b+
+    expire-ms: 3600000
+  minio:
+    endpoint: http://127.0.0.1:19000
+    access-key: minioadmin
+    secret-key: minioadmin
+    bucket: john-ecommerce-test
+  cors:
+    origins: http://localhost:3020,http://localhost:3021

@@ -144,12 +144,28 @@ public class InventoryService implements InventoryFacade {
 
     private List<StockLot> selectAllocatableLots(Long warehouseId, Long skuId) {
         // FEFO: order by expire_date ASC (nulls last), then inbound_at ASC (FIFO)
-        return stockLotMapper.selectList(new LambdaQueryWrapper<StockLot>()
+        List<StockLot> lots = stockLotMapper.selectList(new LambdaQueryWrapper<StockLot>()
                 .eq(StockLot::getWarehouseId, warehouseId)
                 .eq(StockLot::getSkuId, skuId)
-                .gt(StockLot::getAvailable, 0)
-                .orderByAsc(StockLot::getExpireDate)
-                .orderByAsc(StockLot::getInboundAt));
+                .gt(StockLot::getAvailable, 0));
+        lots.sort(InventoryService::compareFefo);
+        return lots;
+    }
+
+    /**
+     * FEFO 比较：更早过期优先；过期日相同则更早入库优先；null 视为最晚。
+     * package-visible 便于单测。
+     */
+    static int compareFefo(StockLot a, StockLot b) {
+        long expA = a.getExpireDate() != null ? a.getExpireDate() : Long.MAX_VALUE;
+        long expB = b.getExpireDate() != null ? b.getExpireDate() : Long.MAX_VALUE;
+        int byExpire = Long.compare(expA, expB);
+        if (byExpire != 0) {
+            return byExpire;
+        }
+        long inA = a.getInboundAt() != null ? a.getInboundAt() : Long.MAX_VALUE;
+        long inB = b.getInboundAt() != null ? b.getInboundAt() : Long.MAX_VALUE;
+        return Long.compare(inA, inB);
     }
 
     StockLot ensureDefaultLot(Long warehouseId, Long skuId) {

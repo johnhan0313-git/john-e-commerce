@@ -1,0 +1,16 @@
+**/node_modules
+**/dist
+**/target
+.git
+.idea
+.run
+.cursor
+**/.env
+**/.env.*
+!**/.env.example
+*.log
+docker-compose*.yml
+run.sh
+scripts
+deploy
+docs

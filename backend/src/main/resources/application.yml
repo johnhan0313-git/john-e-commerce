@@ -16,6 +16,10 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:john-ecommerce}
     password: ${SPRING_DATASOURCE_PASSWORD:john-ecommerce-123}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      data-source-properties:
+        # Allow JacksonTypeHandler JSON strings to bind into jsonb columns
+        stringtype: unspecified
 
   data:
     redis:

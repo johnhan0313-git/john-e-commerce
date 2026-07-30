@@ -63,7 +63,8 @@ public class ChannelRouter {
         RouteStrategyType strategy = policy != null ? RouteStrategyType.of(policy.getStrategyType()) : RouteStrategyType.PRIORITY;
 
         PayChannelConfig chosen = switch (strategy) {
-            case WEIGHT_LB -> weightedSelect(configs);
+            case WEIGHT_LB -> weightedSelect(configs, ThreadLocalRandom.current().nextInt(
+                    Math.max(1, configs.stream().mapToInt(c -> c.getWeight() != null ? c.getWeight() : 1).sum())));
             case FAIL_FAST -> configs.get(0);
             default -> configs.stream()
                     .max(Comparator.comparingInt(c -> c.getWeight() != null ? c.getWeight() : 0))
@@ -102,13 +103,15 @@ public class ChannelRouter {
         return result;
     }
 
-    private PayChannelConfig weightedSelect(List<PayChannelConfig> configs) {
-        int total = configs.stream().mapToInt(c -> c.getWeight() != null ? c.getWeight() : 1).sum();
-        int rand = ThreadLocalRandom.current().nextInt(total);
+    /**
+     * 加权选择：{@code randomBoundExclusive} 落在 [0, totalWeight) 时命中对应渠道。
+     * package-visible 便于单测。
+     */
+    static PayChannelConfig weightedSelect(List<PayChannelConfig> configs, int randomBoundExclusive) {
         int cumulative = 0;
         for (PayChannelConfig c : configs) {
             cumulative += (c.getWeight() != null ? c.getWeight() : 1);
-            if (rand < cumulative) return c;
+            if (randomBoundExclusive < cumulative) return c;
         }
         return configs.get(configs.size() - 1);
     }

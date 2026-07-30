@@ -131,7 +131,7 @@ CREATE TABLE t_cart (
     user_id         BIGINT NOT NULL,
     sku_id          BIGINT NOT NULL,
     quantity        INT NOT NULL DEFAULT 1,
-    checked         SMALLINT NOT NULL DEFAULT 1,
+    selected        SMALLINT NOT NULL DEFAULT 1,
     delete_flag     SMALLINT NOT NULL DEFAULT 0,
     created_at      BIGINT NOT NULL,
     created_by      BIGINT,

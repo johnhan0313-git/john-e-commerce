@@ -36,7 +36,8 @@ public class Order extends BaseEntity {
     private String tableNo;
     private String remark;
     private Long activityId;
-    /** @deprecated use activityId */
+    /** @deprecated use activityId — 库表已无 campaign_id 列 */
+    @TableField(exist = false)
     private Long campaignId;
     private Long distributorId;
     private Long cancelTime;
