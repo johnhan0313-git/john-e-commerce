@@ -38,7 +38,7 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Value("${app.jwt.secret:change-me-in-production}")
+    @Value("${app.jwt.secret:john-ecommerce-dev-jwt-secret-change-me-32b+}")
     private String jwtSecret;
 
     @Value("${app.cors.origins:http://localhost:3020,http://localhost:3021}")

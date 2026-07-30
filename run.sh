@@ -180,7 +180,9 @@ start_backend() {
   cd "$BACKEND_DIR"
   _free_port "$BACKEND_PORT"
   echo "JAVA_HOME=${JAVA_HOME}"
+  # macOS 系统 SOCKS(127.0.0.1:12450) 会劫持本机隧道；必须显式清空并声明 bypass
   nohup env JAVA_HOME="$JAVA_HOME" PATH="$JAVA_HOME/bin:$PATH" \
+    JAVA_TOOL_OPTIONS="-Djava.net.useSystemProxies=false -DsocksProxyHost= -Dhttp.proxyHost= -Dhttps.proxyHost= -Dhttp.nonProxyHosts=localhost|127.*|*.local -Dhttps.nonProxyHosts=localhost|127.*|*.local -DsocksNonProxyHosts=localhost|127.*|*.local" \
     mvn -q spring-boot:run -Dspring-boot.run.profiles=dev \
     >"$RUN_DIR/backend.log" 2>&1 &
   echo $! >"$RUN_DIR/backend.pid"

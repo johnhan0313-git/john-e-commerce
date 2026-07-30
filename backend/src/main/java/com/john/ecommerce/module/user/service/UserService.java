@@ -24,7 +24,7 @@ public class UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${app.jwt.secret:change-me-in-production}")
+    @Value("${app.jwt.secret:john-ecommerce-dev-jwt-secret-change-me-32b+}")
     private String jwtSecret;
 
     @Value("${app.jwt.expire-ms:604800000}")

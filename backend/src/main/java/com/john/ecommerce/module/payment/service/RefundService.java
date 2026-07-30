@@ -2,6 +2,8 @@ package com.john.ecommerce.module.payment.service;
 
 import com.john.ecommerce.common.exception.BizException;
 import com.john.ecommerce.module.payment.channel.PayChannel;
+import com.john.ecommerce.module.payment.channel.RefundContext;
+import com.john.ecommerce.module.payment.channel.RefundResult;
 import com.john.ecommerce.module.payment.channel.dto.ChannelRefundResult;
 import com.john.ecommerce.module.payment.channel.route.PayChannelRegistry;
 import com.john.ecommerce.module.payment.entity.PayChannelConfig;
@@ -26,12 +28,29 @@ public class RefundService {
     public ChannelRefundResult refund(Long paymentId, BigDecimal refundAmount) {
         Payment payment = paymentMapper.selectById(paymentId);
         if (payment == null) throw new BizException("支付单不存在");
-        if (payment.getChannelConfigId() == null) throw new BizException("无渠道配置");
+        if (payment.getChannelType() == null) throw new BizException("无渠道类型");
 
-        PayChannelConfig config = channelConfigMapper.selectById(payment.getChannelConfigId());
+        PayChannelConfig config = payment.getChannelConfigId() != null
+                ? channelConfigMapper.selectById(payment.getChannelConfigId())
+                : null;
         PayChannel channel = channelRegistry.get(payment.getChannelType());
         if (channel == null) throw new BizException("渠道未实现");
 
-        return channel.refund(config, payment.getChannelTradeNo(), refundAmount);
+        Payment refundPayment = new Payment();
+        refundPayment.setAmount(refundAmount);
+        refundPayment.setParentPaymentId(payment.getId());
+
+        RefundContext ctx = new RefundContext();
+        ctx.setPayment(payment);
+        ctx.setRefundPayment(refundPayment);
+        ctx.setConfig(config);
+
+        RefundResult result = channel.refund(ctx);
+
+        ChannelRefundResult out = new ChannelRefundResult();
+        out.setSuccess(result.isSuccess());
+        out.setRefundedAmount(refundAmount);
+        out.setMessage(result.getChannelRefundNo());
+        return out;
     }
 }

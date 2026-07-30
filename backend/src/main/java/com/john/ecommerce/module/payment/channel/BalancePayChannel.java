@@ -1,6 +1,7 @@
 package com.john.ecommerce.module.payment.channel;
 
-import com.john.ecommerce.module.payment.service.LedgerService;
+import com.john.ecommerce.module.payment.ledger.entity.LedgerAccount;
+import com.john.ecommerce.module.payment.ledger.service.LedgerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -21,11 +22,12 @@ public class BalancePayChannel implements PayChannel {
     @Override
     public PrepayResult prepay(PaymentContext ctx) {
         Long userId = ctx.getPayment().getCreatedBy();
-        Long tenantId = ctx.getPayment().getTenantId();
         long amountCents = ctx.getPayment().getAmount().movePointRight(2).longValue();
 
-        ledgerService.freezeDebit(tenantId, "USER_BALANCE", userId, amountCents,
-                "PAYMENT", ctx.getPayment().getId());
+        LedgerAccount account = ledgerService.openAccount("USER", userId, "USER_BALANCE", "CNY");
+        // 余额支付：预下单即扣可用余额（与旧 freezeDebit 语义对齐）
+        ledgerService.debit(account.getId(), amountCents, "PAYMENT", "PAYMENT",
+                ctx.getPayment().getId(), null);
 
         PrepayResult r = new PrepayResult();
         r.setSuccess(true);
@@ -45,11 +47,11 @@ public class BalancePayChannel implements PayChannel {
     @Override
     public RefundResult refund(RefundContext ctx) {
         Long userId = ctx.getPayment().getCreatedBy();
-        Long tenantId = ctx.getPayment().getTenantId();
         long amountCents = ctx.getRefundPayment().getAmount().movePointRight(2).longValue();
 
-        ledgerService.credit(tenantId, "USER_BALANCE", userId, amountCents,
-                "REFUND", ctx.getRefundPayment().getId());
+        LedgerAccount account = ledgerService.openAccount("USER", userId, "USER_BALANCE", "CNY");
+        ledgerService.credit(account.getId(), amountCents, "REFUND", "REFUND",
+                ctx.getRefundPayment().getId(), null);
 
         RefundResult r = new RefundResult();
         r.setSuccess(true);

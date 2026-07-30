@@ -29,7 +29,7 @@ public class LedgerAccountController {
         return R.ok(ledgerService.openAccount(ownerType, ownerId, accountType, currency));
     }
 
-    @GetMapping("/ledger/account")
+    @GetMapping("/ledger/accounts")
     public R<Page<LedgerAccount>> listAccounts(@RequestParam(defaultValue = "1") int page,
                                                @RequestParam(defaultValue = "20") int size,
                                                @RequestParam(required = false) String ownerType,

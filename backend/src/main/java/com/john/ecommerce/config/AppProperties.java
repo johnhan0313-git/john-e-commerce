@@ -14,13 +14,13 @@ public class AppProperties {
 
     @Data
     public static class Jwt {
-        private String secret = "change-me-in-production";
+        private String secret = "john-ecommerce-dev-jwt-secret-change-me-32b+";
         private long expireMs = 604800000L; // 7 days
     }
 
     @Data
     public static class Minio {
-        private String endpoint = "http://john-server:19000";
+        private String endpoint = "http://127.0.0.1:19000";
         private String accessKey = "minioadmin";
         private String secretKey = "minioadmin";
         private String bucket = "john-ecommerce";

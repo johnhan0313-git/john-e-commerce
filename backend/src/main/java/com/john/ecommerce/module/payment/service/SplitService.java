@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +21,21 @@ public class SplitService {
     private final SplitOrderMapper splitOrderMapper;
     private final SplitDetailMapper splitDetailMapper;
     private final List<SplitChannel> splitChannels;
+
+    @Transactional
+    public SplitOrder createSplit(Long paymentId, List<SplitDetail> details) {
+        if (details == null || details.isEmpty()) {
+            throw new BizException("分账明细不能为空");
+        }
+        long total = details.stream().mapToLong(d -> d.getAmount() != null ? d.getAmount() : 0L).sum();
+        SplitOrder order = new SplitOrder();
+        order.setPaymentId(paymentId);
+        order.setSplitNo("SP" + UUID.randomUUID().toString().replace("-", "").substring(0, 20));
+        order.setChannelType("MOCK");
+        order.setTotalAmount(total);
+        order.setStatus(0);
+        return createSplit(order, details);
+    }
 
     @Transactional
     public SplitOrder createSplit(SplitOrder order, List<SplitDetail> details) {
@@ -49,6 +65,12 @@ public class SplitService {
         order.setStatus(2);
         order.setConfirmedAt(System.currentTimeMillis());
         splitOrderMapper.updateById(order);
+    }
+
+    public List<SplitOrder> listByPayment(Long paymentId) {
+        return splitOrderMapper.selectList(new LambdaQueryWrapper<SplitOrder>()
+                .eq(SplitOrder::getPaymentId, paymentId)
+                .orderByDesc(SplitOrder::getCreatedAt));
     }
 
     private SplitChannel resolveChannel(String channelType) {

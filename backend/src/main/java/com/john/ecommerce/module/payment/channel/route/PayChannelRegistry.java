@@ -28,7 +28,7 @@ public class PayChannelRegistry {
 
     private String detectType(PayChannel c) {
         for (String t : List.of("MOCK", "BALANCE", "WECHAT", "ALIPAY")) {
-            if (c.support(t)) return t;
+            if (c.supports(t)) return t;
         }
         return "UNKNOWN";
     }
