@@ -77,7 +77,8 @@ class FulfillmentAndFeatureGateIT extends AbstractIntegrationTest {
         mockMvc.perform(post("/logistics/webhook/{trackingNo}", tracking)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":1}"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
 
         assertOrderStatus(orderId, OrderStatus.DELIVERED);
 

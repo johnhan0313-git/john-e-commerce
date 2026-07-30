@@ -87,7 +87,13 @@ public class TestDataSeeder {
         });
     }
 
+    public void ensureSchemaPatches() {
+        // Idempotent patches for local DBs that may lag scripts/sql
+        jdbcTemplate.execute("ALTER TABLE t_order ADD COLUMN IF NOT EXISTS cancel_by BIGINT");
+    }
+
     public void ensureCoreModules() {
+        ensureSchemaPatches();
         ensureModulesEnabled(
                 ModuleCodes.TENANT,
                 ModuleCodes.PRODUCT,

@@ -14,21 +14,23 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/logistics")
 @RequiredArgsConstructor
-@RequiresModule(ModuleCodes.FULFILLMENT)
 public class LogisticsController {
 
     private final LogisticsService logisticsService;
 
     @PostMapping
+    @RequiresModule(ModuleCodes.FULFILLMENT)
     public R<LogisticsVO> createShipment(@Valid @RequestBody LogisticsCreateDTO dto) {
         return R.ok(logisticsService.createShipment(dto));
     }
 
     @GetMapping("/order/{orderId}")
+    @RequiresModule(ModuleCodes.FULFILLMENT)
     public R<LogisticsVO> getByOrderId(@PathVariable Long orderId) {
         return R.ok(logisticsService.getByOrderId(orderId));
     }
 
+    /** 承运商回调：无 JWT，不做模块门禁（Security 已 permitAll）。 */
     @PostMapping("/webhook/{trackingNo}")
     public R<Void> webhook(@PathVariable String trackingNo, @RequestBody LogisticsWebhookDTO dto) {
         logisticsService.webhook(trackingNo, dto);
@@ -36,6 +38,7 @@ public class LogisticsController {
     }
 
     @PutMapping("/confirm-receipt/{orderId}")
+    @RequiresModule(ModuleCodes.FULFILLMENT)
     public R<Void> confirmReceipt(@PathVariable Long orderId) {
         logisticsService.confirmReceipt(orderId);
         return R.ok(null);

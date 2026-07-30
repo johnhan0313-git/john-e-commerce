@@ -1,6 +1,7 @@
 package com.john.ecommerce.module.fulfillment.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.john.ecommerce.common.context.TenantContext;
 import com.john.ecommerce.common.enums.OrderStatus;
 import com.john.ecommerce.common.exception.BizException;
 import com.john.ecommerce.module.fulfillment.dto.LogisticsCreateDTO;
@@ -59,26 +60,37 @@ public class LogisticsService {
 
     @Transactional
     public void webhook(String trackingNo, LogisticsWebhookDTO dto) {
-        LogisticsOrder lo = logisticsOrderMapper.selectOne(new LambdaQueryWrapper<LogisticsOrder>()
-                .eq(LogisticsOrder::getTrackingNo, trackingNo));
+        LogisticsOrder lo = logisticsOrderMapper.selectByTrackingNoIgnoreTenant(trackingNo);
         if (lo == null) throw new BizException("物流单不存在: " + trackingNo);
 
-        if (dto.getStatus() != null && dto.getStatus() == 1) {
-            lo.setStatus(2);
-            lo.setDeliveredAt(dto.getEventTime() != null ? dto.getEventTime() : System.currentTimeMillis());
-            logisticsOrderMapper.updateById(lo);
+        Long prevTenant = TenantContext.getTenantId();
+        if (lo.getTenantId() != null) {
+            TenantContext.setTenantId(lo.getTenantId());
+        }
+        try {
+            if (dto.getStatus() != null && dto.getStatus() == 1) {
+                lo.setStatus(2);
+                lo.setDeliveredAt(dto.getEventTime() != null ? dto.getEventTime() : System.currentTimeMillis());
+                logisticsOrderMapper.updateById(lo);
 
-            if (lo.getOrderId() != null) {
-                Order order = orderMapper.selectById(lo.getOrderId());
-                if (order != null && order.getStatus() < OrderStatus.DELIVERED.getCode()) {
-                    order.setStatus(OrderStatus.DELIVERED.getCode());
-                    orderMapper.updateById(order);
+                if (lo.getOrderId() != null) {
+                    Order order = orderMapper.selectById(lo.getOrderId());
+                    if (order != null && order.getStatus() < OrderStatus.DELIVERED.getCode()) {
+                        order.setStatus(OrderStatus.DELIVERED.getCode());
+                        orderMapper.updateById(order);
+                    }
                 }
+            } else {
+                lo.setStatus(1);
+                lo.setShippedAt(dto.getEventTime() != null ? dto.getEventTime() : System.currentTimeMillis());
+                logisticsOrderMapper.updateById(lo);
             }
-        } else {
-            lo.setStatus(1);
-            lo.setShippedAt(dto.getEventTime() != null ? dto.getEventTime() : System.currentTimeMillis());
-            logisticsOrderMapper.updateById(lo);
+        } finally {
+            if (prevTenant == null) {
+                TenantContext.clear();
+            } else {
+                TenantContext.setTenantId(prevTenant);
+            }
         }
     }
 

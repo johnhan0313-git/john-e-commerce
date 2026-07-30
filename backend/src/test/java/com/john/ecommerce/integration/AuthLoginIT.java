@@ -21,6 +21,8 @@ class AuthLoginIT extends AbstractIntegrationTest {
 
     @Test
     void loginReturnsJwtAndTenantScopedUser() throws Exception {
+        // Ensure local schema patches even for smoke login
+        // (AuthLoginIT does not call TestDataSeeder by default)
         String bearer = TestAuthHelper.loginAndBearer(mockMvc, objectMapper);
         assertThat(bearer).startsWith("Bearer ");
 
