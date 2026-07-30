@@ -1,20 +1,93 @@
 <template>
   <div>
-    <h1>模块配置</h1>
-    <div v-for="m in modules" :key="m.moduleCode">
-      <span>{{ m.moduleName }} ({{ m.moduleCode }})</span>
-      <span> — {{ m.status === 1 ? '已开通' : '未开通' }}</span>
-    </div>
+    <h2>模块配置</h2>
+    <p class="muted">开通 PRODUCT / TRADE / PAYMENT 等模块后，对应菜单与接口才可用。</p>
+
+    <el-table v-loading="loading" :data="rows" stripe>
+      <el-table-column prop="moduleCode" label="编码" width="140" />
+      <el-table-column prop="moduleName" label="名称" width="160" />
+      <el-table-column prop="description" label="说明" min-width="200" />
+      <el-table-column label="状态" width="120">
+        <template #default="{ row }">
+          <el-tag :type="row.enabled ? 'success' : 'info'" size="small">
+            {{ row.enabled ? '已开通' : '未开通' }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="140">
+        <template #default="{ row }">
+          <el-switch
+            :model-value="row.enabled"
+            :loading="row.switching"
+            @change="(val: string | number | boolean) => toggle(row, Boolean(val))"
+          />
+        </template>
+      </el-table-column>
+    </el-table>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import client from '@/api/client'
+import { useModulesStore } from '@/stores/modules'
+import type { ModuleDef, R, TenantModule } from '@/types'
 
-const modules = ref<any[]>([])
-onMounted(async () => {
-  const res: any = await client.get('/tenant/modules')
-  modules.value = res.data || []
-})
+interface Row extends ModuleDef {
+  enabled: boolean
+  switching?: boolean
+}
+
+const rows = ref<Row[]>([])
+const loading = ref(false)
+const modules = useModulesStore()
+
+async function load() {
+  loading.value = true
+  try {
+    const [defsRes, enabledRes] = await Promise.all([
+      client.get('/module-def') as Promise<R<ModuleDef[]>>,
+      client.get('/tenant/modules') as Promise<R<TenantModule[]>>,
+    ])
+    const enabledSet = new Set(
+      (enabledRes.data || [])
+        .filter((m) => m.status !== 0)
+        .map((m) => m.moduleCode)
+    )
+    rows.value = (defsRes.data || []).map((d) => ({
+      ...d,
+      enabled: enabledSet.has(d.moduleCode),
+      switching: false,
+    }))
+  } finally {
+    loading.value = false
+  }
+}
+
+async function toggle(row: Row, enabled: boolean) {
+  row.switching = true
+  try {
+    if (enabled) {
+      await client.post('/tenant/modules', { moduleCode: row.moduleCode })
+      ElMessage.success(`已开通 ${row.moduleCode}`)
+    } else {
+      await client.delete(`/tenant/modules/${row.moduleCode}`)
+      ElMessage.success(`已关闭 ${row.moduleCode}`)
+    }
+    row.enabled = enabled
+    await modules.fetch()
+  } catch {
+    /* interceptor shows message */
+  } finally {
+    row.switching = false
+  }
+}
+
+onMounted(load)
 </script>
+
+<style scoped>
+h2 { margin: 0 0 8px; }
+.muted { color: #909399; margin-bottom: 16px; }
+</style>

@@ -1,18 +1,22 @@
-import { reactive } from 'vue'
-import client from '../api/client'
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+import client from '@/api/client'
+import type { LoginVO, R } from '@/types'
 
-export const authStore = reactive({
-  token: localStorage.getItem('admin_token') || '',
-  get isLoggedIn() { return !!this.token },
+export const useAuthStore = defineStore('auth', () => {
+  const token = ref(localStorage.getItem('admin_token') || '')
+  const isLoggedIn = computed(() => !!token.value)
 
-  async login(username: string, password: string) {
-    const res = await client.post('/auth/login', { username, password })
-    this.token = res.data.data.token
-    localStorage.setItem('admin_token', this.token)
-  },
+  async function login(phone: string, password: string) {
+    const res = await client.post('/auth/login', { phone, password }) as R<LoginVO>
+    token.value = res.data.token
+    localStorage.setItem('admin_token', token.value)
+  }
 
-  logout() {
-    this.token = ''
+  function logout() {
+    token.value = ''
     localStorage.removeItem('admin_token')
-  },
+  }
+
+  return { token, isLoggedIn, login, logout }
 })

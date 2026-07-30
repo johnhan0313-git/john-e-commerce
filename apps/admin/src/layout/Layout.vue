@@ -1,25 +1,79 @@
 <template>
-  <div style="display:flex">
-    <aside style="width:200px; border-right:1px solid #ccc; padding:16px">
-      <h3>Admin</h3>
-      <ul style="list-style:none; padding:0">
-        <li><router-link to="/dashboard">仪表盘</router-link></li>
-        <li><router-link to="/products">商品</router-link></li>
-        <li><router-link to="/orders">订单</router-link></li>
-        <li v-if="modules.isEnabled('purchase')"><router-link to="/purchase">采购</router-link></li>
-        <li v-if="modules.isEnabled('payment')"><router-link to="/payment">支付</router-link></li>
-        <li><router-link to="/tenant/modules">模块配置</router-link></li>
-      </ul>
-    </aside>
-    <main style="flex:1; padding:16px">
-      <router-view />
-    </main>
-  </div>
+  <el-container class="layout">
+    <el-aside width="220px" class="aside">
+      <div class="brand">John Admin</div>
+      <el-menu :default-active="active" router>
+        <el-menu-item index="/dashboard">仪表盘</el-menu-item>
+        <el-menu-item v-if="modules.isEnabled('product')" index="/products">商品</el-menu-item>
+        <el-menu-item v-if="modules.isEnabled('trade')" index="/orders">订单</el-menu-item>
+        <el-menu-item index="/tenant/modules">模块配置</el-menu-item>
+      </el-menu>
+    </el-aside>
+    <el-container>
+      <el-header class="header">
+        <span class="muted">多租户电商管理后台</span>
+        <el-button type="danger" link @click="logout">退出</el-button>
+      </el-header>
+      <el-main>
+        <router-view />
+      </el-main>
+    </el-container>
+  </el-container>
 </template>
 
 <script setup lang="ts">
+import { computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { useModulesStore } from '@/stores/modules'
 
+const route = useRoute()
+const router = useRouter()
+const auth = useAuthStore()
 const modules = useModulesStore()
-modules.fetch()
+
+const active = computed(() => route.path)
+
+onMounted(() => {
+  modules.fetch()
+})
+
+function logout() {
+  auth.logout()
+  router.push('/login')
+}
 </script>
+
+<style scoped>
+.layout {
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+.aside {
+  background: #fff;
+  border-right: 1px solid #ebeef5;
+}
+
+.brand {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  font-weight: 700;
+  font-size: 16px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.muted {
+  color: #909399;
+}
+</style>

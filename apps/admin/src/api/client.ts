@@ -1,8 +1,9 @@
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 
 const client = axios.create({
   baseURL: '/api',
-  timeout: 10000
+  timeout: 10000,
 })
 
 client.interceptors.request.use((config) => {
@@ -16,9 +17,17 @@ client.interceptors.request.use((config) => {
 client.interceptors.response.use(
   (res) => res.data,
   (err) => {
-    if (err.response?.status === 401) {
+    const status = err.response?.status
+    const message = err.response?.data?.message || err.message || '请求失败'
+    if (status === 401) {
       localStorage.removeItem('admin_token')
-      window.location.href = '/login'
+      if (!location.pathname.startsWith('/login')) {
+        window.location.href = '/login'
+      }
+    } else if (status !== 403) {
+      ElMessage.error(message)
+    } else {
+      ElMessage.warning(message || '模块未开通或无权限')
     }
     return Promise.reject(err)
   }

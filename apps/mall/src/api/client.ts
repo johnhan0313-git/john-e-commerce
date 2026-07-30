@@ -1,8 +1,11 @@
 import axios from 'axios'
+import { toast } from '@/utils/toast'
+
+const tenantId = import.meta.env.VITE_TENANT_ID || '1'
 
 const client = axios.create({
   baseURL: '/api',
-  timeout: 10000
+  timeout: 10000,
 })
 
 client.interceptors.request.use((config) => {
@@ -10,15 +13,23 @@ client.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  config.headers['X-Tenant-Id'] = tenantId
   return config
 })
 
 client.interceptors.response.use(
   (res) => res.data,
   (err) => {
-    if (err.response?.status === 401) {
+    const status = err.response?.status
+    const message = err.response?.data?.message || err.message || '请求失败'
+    if (status === 401) {
       localStorage.removeItem('token')
-      window.location.href = '/'
+      if (!location.pathname.startsWith('/login')) {
+        const redirect = encodeURIComponent(location.pathname + location.search)
+        window.location.href = `/login?redirect=${redirect}`
+      }
+    } else {
+      toast(message, 'error')
     }
     return Promise.reject(err)
   }

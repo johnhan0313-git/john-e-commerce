@@ -1,29 +1,74 @@
 <template>
   <div>
-    <h1>仪表盘</h1>
-    <div v-if="stats">
-      <p>GMV: ¥{{ stats.gmv }}</p>
-      <h3>订单状态分布</h3>
-      <ul>
-        <li v-for="(cnt, status) in stats.orderCountByStatus" :key="status">状态{{ status }}: {{ cnt }}</li>
-      </ul>
-      <h3>热销 SKU</h3>
-      <ul>
-        <li v-for="s in stats.topSkus" :key="s.skuId">{{ s.skuName }} - {{ s.totalQty }}件</li>
-      </ul>
-    </div>
+    <h2>仪表盘</h2>
+    <el-alert
+      v-if="error"
+      :title="error"
+      type="warning"
+      show-icon
+      :closable="false"
+      class="mb"
+    />
+    <el-row v-loading="loading" :gutter="16">
+      <el-col :span="8">
+        <el-card shadow="hover">
+          <el-statistic title="GMV" :value="Number(stats?.gmv || 0)" :precision="2" prefix="¥" />
+        </el-card>
+      </el-col>
+      <el-col :span="16">
+        <el-card shadow="hover">
+          <template #header>订单状态分布</template>
+          <el-empty v-if="!statusRows.length" description="暂无数据" :image-size="60" />
+          <el-table v-else :data="statusRows" size="small">
+            <el-table-column prop="status" label="状态" />
+            <el-table-column prop="count" label="数量" width="120" />
+          </el-table>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <el-card class="mt" shadow="never">
+      <template #header>热销 SKU</template>
+      <el-table :data="stats?.topSkus || []" empty-text="暂无数据">
+        <el-table-column prop="skuId" label="SKU ID" width="120" />
+        <el-table-column prop="skuName" label="名称" />
+        <el-table-column prop="totalQty" label="销量" width="120" />
+      </el-table>
+    </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import client from '@/api/client'
+import type { R, StatsOverview } from '@/types'
 
-const stats = ref<any>(null)
+const stats = ref<StatsOverview | null>(null)
+const loading = ref(false)
+const error = ref('')
+
+const statusRows = computed(() =>
+  Object.entries(stats.value?.orderCountByStatus || {}).map(([status, count]) => ({
+    status,
+    count,
+  }))
+)
+
 onMounted(async () => {
+  loading.value = true
   try {
-    const res: any = await client.get('/statistics/overview')
+    const res = await client.get('/statistics/overview') as R<StatsOverview>
     stats.value = res.data
-  } catch { /* module may not be enabled */ }
+  } catch (e: any) {
+    error.value = e.response?.data?.message || '统计模块可能未开通'
+  } finally {
+    loading.value = false
+  }
 })
 </script>
+
+<style scoped>
+.mb { margin-bottom: 16px; }
+.mt { margin-top: 16px; }
+h2 { margin: 0 0 16px; }
+</style>

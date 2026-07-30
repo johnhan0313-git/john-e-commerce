@@ -1,6 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import client from '@/api/client'
+import type { R } from '@/types'
+
+interface TenantModule {
+  moduleCode: string
+  moduleName?: string
+  status?: number
+}
 
 export const useModulesStore = defineStore('modules', () => {
   const list = ref<string[]>([])
@@ -8,8 +15,8 @@ export const useModulesStore = defineStore('modules', () => {
 
   async function fetch() {
     try {
-      const res: any = await client.get('/tenant/modules')
-      list.value = (res.data || []).map((m: any) => m.moduleCode)
+      const res = await client.get('/tenant/modules') as R<TenantModule[]>
+      list.value = (res.data || []).map((m) => m.moduleCode)
     } catch {
       list.value = []
     }
