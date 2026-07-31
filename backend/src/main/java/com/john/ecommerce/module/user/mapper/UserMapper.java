@@ -12,6 +12,11 @@ public interface UserMapper extends BaseMapper<User> {
 
     /** 登录前尚无租户上下文，需绕过租户行拦截。 */
     @InterceptorIgnore(tenantLine = "true")
+    @Select("SELECT * FROM t_user WHERE lower(email) = lower(#{email}) AND delete_flag = 0 LIMIT 1")
+    User selectByEmail(@Param("email") String email);
+
+    /** @deprecated 已切邮箱登录，保留兼容旧调用 */
+    @InterceptorIgnore(tenantLine = "true")
     @Select("SELECT * FROM t_user WHERE phone = #{phone} AND delete_flag = 0 LIMIT 1")
     User selectByPhone(@Param("phone") String phone);
 }

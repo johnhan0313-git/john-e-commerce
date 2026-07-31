@@ -90,6 +90,15 @@ public class TestDataSeeder {
     public void ensureSchemaPatches() {
         // Idempotent patches for local DBs that may lag scripts/sql
         jdbcTemplate.execute("ALTER TABLE t_order ADD COLUMN IF NOT EXISTS cancel_by BIGINT");
+        jdbcTemplate.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS uk_t_user_email
+                ON t_user (email) WHERE delete_flag = 0 AND email IS NOT NULL
+                """);
+        jdbcTemplate.update("""
+                UPDATE t_user SET email = 'johnhan0313@gmail.com', nickname = '平台管理员',
+                  user_type = 1, status = 1, updated_at = 0
+                WHERE id = 1
+                """);
     }
 
     public void ensureCoreModules() {

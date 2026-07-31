@@ -13,4 +13,7 @@ public class TenantVO {
     private Integer status;
     private Map<String, Object> config;
     private Long createdAt;
+    /** 仅创建租户时回填 */
+    private String adminEmail;
+    private Long adminUserId;
 }

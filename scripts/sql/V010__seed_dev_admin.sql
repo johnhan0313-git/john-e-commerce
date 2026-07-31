@@ -15,14 +15,12 @@ VALUES
 (2005, 1, 'content', 1, 0, 0, 0)
 ON CONFLICT (id) DO NOTHING;
 
--- Admin: phone 13800000000 / password admin123
--- password_hash = BCrypt (Spring BCryptPasswordEncoder)
+-- Admin: email johnhan0313@gmail.com (邮箱验证码登录；dev 固定码见 app.auth.fixed-code)
 INSERT INTO t_user (
     id, tenant_id, phone, email, nickname, user_type, status, password_hash,
     delete_flag, created_at, updated_at
 ) VALUES (
-    1, 1, '13800000000', 'admin@demo.local', '演示管理员', 1, 1,
-    '$2a$10$tkg2tH9kzNhADH9rtvY0.eSrohnJsMiv/TN4LaB2W5HnmiYdCqvjK',
-    0, 0, 0
+    1, 1, NULL, 'johnhan0313@gmail.com', '平台管理员', 1, 1,
+    NULL, 0, 0, 0
 )
 ON CONFLICT (id) DO NOTHING;

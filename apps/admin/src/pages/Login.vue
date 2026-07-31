@@ -3,41 +3,72 @@
     <el-card class="login-card">
       <h2>管理后台登录</h2>
       <el-form label-position="top" @submit.prevent="onSubmit">
-        <el-form-item label="手机号">
-          <el-input v-model="phone" placeholder="13800000000" />
+        <el-form-item label="邮箱">
+          <el-input v-model="email" placeholder="johnhan0313@gmail.com" />
         </el-form-item>
-        <el-form-item label="密码">
-          <el-input v-model="password" type="password" show-password placeholder="密码" />
+        <el-form-item label="验证码">
+          <div class="code-row">
+            <el-input v-model="code" placeholder="6 位验证码" />
+            <el-button :disabled="cooldown > 0 || sending" @click="sendCode">
+              {{ cooldown > 0 ? `${cooldown}s` : '获取验证码' }}
+            </el-button>
+          </div>
         </el-form-item>
         <el-alert v-if="err" :title="err" type="error" show-icon :closable="false" class="mb" />
         <el-button type="primary" native-type="submit" :loading="loading" style="width: 100%">
           登录
         </el-button>
+        <p class="hint">本地默认验证码 123456（见 app.auth.fixed-code）</p>
       </el-form>
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useModulesStore } from '@/stores/modules'
 
-const phone = ref('13800000000')
-const password = ref('admin123')
+const email = ref('johnhan0313@gmail.com')
+const code = ref('123456')
 const err = ref('')
 const loading = ref(false)
+const sending = ref(false)
+const cooldown = ref(0)
+let timer: number | undefined
+
 const auth = useAuthStore()
 const modules = useModulesStore()
 const router = useRouter()
+
+async function sendCode() {
+  err.value = ''
+  sending.value = true
+  try {
+    await auth.sendEmailCode(email.value.trim())
+    ElMessage.success('验证码已发送')
+    cooldown.value = 60
+    timer = window.setInterval(() => {
+      cooldown.value -= 1
+      if (cooldown.value <= 0 && timer) {
+        clearInterval(timer)
+        timer = undefined
+      }
+    }, 1000)
+  } catch (e: any) {
+    err.value = e.response?.data?.message || '发送失败'
+  } finally {
+    sending.value = false
+  }
+}
 
 async function onSubmit() {
   err.value = ''
   loading.value = true
   try {
-    await auth.login(phone.value.trim(), password.value)
+    await auth.login(email.value.trim(), code.value.trim())
     await modules.fetch()
     ElMessage.success('登录成功')
     router.push('/dashboard')
@@ -47,6 +78,10 @@ async function onSubmit() {
     loading.value = false
   }
 }
+
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
+})
 </script>
 
 <style scoped>
@@ -61,8 +96,20 @@ async function onSubmit() {
   width: min(100% - 32px, 400px);
 }
 
+.code-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
 .mb {
   margin-bottom: 16px;
+}
+
+.hint {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: #909399;
 }
 
 h2 {

@@ -7,18 +7,22 @@ import com.john.ecommerce.module.tenant.dto.TenantCreateDTO;
 import com.john.ecommerce.module.tenant.dto.TenantVO;
 import com.john.ecommerce.module.tenant.entity.Tenant;
 import com.john.ecommerce.module.tenant.mapper.TenantMapper;
+import com.john.ecommerce.module.user.entity.User;
+import com.john.ecommerce.module.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class TenantService {
 
     private final TenantMapper tenantMapper;
+    private final UserService userService;
 
+    @Transactional
     public TenantVO create(TenantCreateDTO dto) {
         Tenant existing = tenantMapper.selectOne(new LambdaQueryWrapper<Tenant>().eq(Tenant::getSlug, dto.getSlug()));
         if (existing != null) throw new BizException("slug 已存在");
@@ -29,7 +33,12 @@ public class TenantService {
         tenant.setConfig(dto.getConfig());
         tenant.setStatus(1);
         tenantMapper.insert(tenant);
-        return toVO(tenant);
+
+        User admin = userService.createTenantAdmin(tenant.getId(), dto.getAdminEmail(), dto.getName() + "管理员");
+        TenantVO vo = toVO(tenant);
+        vo.setAdminEmail(admin.getEmail());
+        vo.setAdminUserId(admin.getId());
+        return vo;
     }
 
     public TenantVO getById(Long id) {

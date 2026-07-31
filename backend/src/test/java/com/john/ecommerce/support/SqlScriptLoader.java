@@ -28,7 +28,8 @@ public final class SqlScriptLoader {
             "V011__seed_dev_payment.sql",
             "V012__align_module_def.sql",
             "V013__cart_selected.sql",
-            "V014__order_cancel_by.sql"
+            "V014__order_cancel_by.sql",
+            "V015__email_login_admin.sql"
     );
 
     private SqlScriptLoader() {}

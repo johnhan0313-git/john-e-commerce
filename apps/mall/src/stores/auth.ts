@@ -9,8 +9,12 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isLoggedIn = computed(() => !!token.value)
 
-  async function login(phone: string, password: string) {
-    const res = await client.post('/auth/login', { phone, password }) as R<LoginVO>
+  async function sendEmailCode(email: string) {
+    await client.post('/auth/email-code', { email })
+  }
+
+  async function login(email: string, code: string) {
+    const res = await client.post('/auth/login', { email, code }) as R<LoginVO>
     token.value = res.data.token
     user.value = res.data.user
     localStorage.setItem('token', token.value)
@@ -22,5 +26,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('token')
   }
 
-  return { token, user, isLoggedIn, login, logout }
+  return { token, user, isLoggedIn, sendEmailCode, login, logout }
 })

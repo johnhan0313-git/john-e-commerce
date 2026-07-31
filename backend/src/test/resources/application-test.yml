@@ -32,6 +32,12 @@ app:
   jwt:
     secret: john-ecommerce-test-jwt-secret-change-me-32b+
     expire-ms: 3600000
+  auth:
+    code-ttl-seconds: 300
+    fixed-code: "123456"
+  # 测试不走真实 SMTP，由 LoggingEmailSender 承接
+  mail:
+    host: ""
   minio:
     endpoint: http://127.0.0.1:19000
     access-key: minioadmin

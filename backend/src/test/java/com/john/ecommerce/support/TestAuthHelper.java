@@ -12,20 +12,27 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 public final class TestAuthHelper {
 
-    public static final String DEMO_PHONE = "13800000000";
-    public static final String DEMO_PASSWORD = "admin123";
+    public static final String DEMO_EMAIL = "johnhan0313@gmail.com";
+    /** Matches app.auth.fixed-code in application-test.yml */
+    public static final String DEMO_CODE = "123456";
 
     private TestAuthHelper() {}
 
     public static String loginAndBearer(MockMvc mockMvc, ObjectMapper objectMapper) throws Exception {
-        return loginAndBearer(mockMvc, objectMapper, DEMO_PHONE, DEMO_PASSWORD);
+        return loginAndBearer(mockMvc, objectMapper, DEMO_EMAIL, DEMO_CODE);
     }
 
     public static String loginAndBearer(MockMvc mockMvc, ObjectMapper objectMapper,
-                                        String phone, String password) throws Exception {
+                                        String email, String code) throws Exception {
+        mockMvc.perform(post("/auth/email-code")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + email + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+
         String body = """
-                {"phone":"%s","password":"%s"}
-                """.formatted(phone, password);
+                {"email":"%s","code":"%s"}
+                """.formatted(email, code);
         MvcResult result = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))

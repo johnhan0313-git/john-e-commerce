@@ -50,6 +50,19 @@ app:
   jwt:
     secret: ${JWT_SECRET:john-ecommerce-dev-jwt-secret-change-me-32b+}
     expire-ms: 604800000
+  auth:
+    code-ttl-seconds: ${AUTH_CODE_TTL_SECONDS:300}
+    # 本地/CI 默认固定验证码；生产请设 AUTH_FIXED_CODE= 清空以启用随机码
+    fixed-code: ${AUTH_FIXED_CODE:123456}
+  # SMTP 与 john-ip-studio 同名环境变量；默认 163 SSL:465
+  mail:
+    host: ${SMTP_HOST:smtp.163.com}
+    port: ${SMTP_PORT:465}
+    username: ${SMTP_USER:yulei_han@163.com}
+    password: ${SMTP_PASSWORD:}
+    from: ${SMTP_FROM:yulei_han@163.com}
+    use-tls: ${SMTP_USE_TLS:false}
+    use-ssl: ${SMTP_USE_SSL:true}
   minio:
     endpoint: ${MINIO_ENDPOINT:http://127.0.0.1:19000}
     access-key: ${MINIO_ACCESS_KEY:minioadmin}
