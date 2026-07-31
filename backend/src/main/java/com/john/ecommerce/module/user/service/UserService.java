@@ -46,7 +46,8 @@ public class UserService {
 
     public LoginVO login(LoginDTO dto) {
         String email = EmailCodeService.normalize(dto.getEmail());
-        emailCodeService.verifyAndConsume(email, dto.getCode());
+        // 先校验不消费：JWT 签发失败时验证码仍可重试，避免误报「已过期」
+        emailCodeService.verify(email, dto.getCode());
 
         User user = userMapper.selectByEmail(email);
         if (user == null) {
@@ -56,6 +57,7 @@ public class UserService {
             throw new BizException("账号已被禁用");
         }
         String token = generateToken(user);
+        emailCodeService.consume(email);
         LoginVO vo = new LoginVO();
         vo.setToken(token);
         vo.setUser(toVO(user));
@@ -140,6 +142,11 @@ public class UserService {
     }
 
     private String generateToken(User user) {
+        byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+        // HS256 要求密钥 ≥ 256 bit；过短会在校验验证码之后才抛 WeakKeyException
+        if (keyBytes.length < 32) {
+            throw new BizException(503, "服务端 JWT 密钥配置过短，请将 JWT_SECRET 设为至少 32 字节");
+        }
         return Jwts.builder()
                 .subject(String.valueOf(user.getId()))
                 .claim("userId", user.getId())
@@ -147,7 +154,7 @@ public class UserService {
                 .claim("userType", String.valueOf(user.getUserType()))
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpireMs))
-                .signWith(Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8)))
+                .signWith(Keys.hmacShaKeyFor(keyBytes))
                 .compact();
     }
 

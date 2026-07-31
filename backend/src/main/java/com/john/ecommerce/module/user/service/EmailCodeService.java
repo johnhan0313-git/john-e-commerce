@@ -36,17 +36,31 @@ public class EmailCodeService {
                 "您的登录验证码是 " + code + "，" + (codeTtlSeconds / 60) + " 分钟内有效。");
     }
 
+    /** 校验验证码，不消费（登录发 token 失败时可重试同一验证码）。 */
+    public void verify(String email, String code) {
+        String cached = getRequired(email);
+        if (!cached.equals(code.trim())) {
+            throw new BizException("验证码错误");
+        }
+    }
+
+    public void consume(String email) {
+        stringRedisTemplate.delete(KEY_PREFIX + normalize(email));
+    }
+
+    /** 校验并消费；仅在后续步骤不会失败时使用。 */
     public void verifyAndConsume(String email, String code) {
-        String normalized = normalize(email);
-        String key = KEY_PREFIX + normalized;
+        verify(email, code);
+        consume(email);
+    }
+
+    private String getRequired(String email) {
+        String key = KEY_PREFIX + normalize(email);
         String cached = stringRedisTemplate.opsForValue().get(key);
         if (cached == null) {
             throw new BizException("验证码已过期，请重新获取");
         }
-        if (!cached.equals(code.trim())) {
-            throw new BizException("验证码错误");
-        }
-        stringRedisTemplate.delete(key);
+        return cached;
     }
 
     static String normalize(String email) {

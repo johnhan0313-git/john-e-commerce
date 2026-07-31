@@ -53,10 +53,18 @@ class EmailCodeServiceTest {
     }
 
     @Test
+    void verifyDoesNotConsume() {
+        when(values.get("auth:email-code:a@b.com")).thenReturn("123456");
+        service.verify("a@b.com", "123456");
+        verify(redis, org.mockito.Mockito.never()).delete(anyString());
+    }
+
+    @Test
     void verifyRejectsWrongCode() {
         when(values.get("auth:email-code:a@b.com")).thenReturn("123456");
         assertThatThrownBy(() -> service.verifyAndConsume("a@b.com", "000000"))
                 .isInstanceOf(BizException.class)
                 .hasMessageContaining("验证码错误");
+        verify(redis, org.mockito.Mockito.never()).delete(anyString());
     }
 }

@@ -18,7 +18,7 @@
         <el-button type="primary" native-type="submit" :loading="loading" style="width: 100%">
           登录
         </el-button>
-        <p class="hint">本地默认验证码 123456（见 app.auth.fixed-code）</p>
+        <p class="hint">请先获取邮箱验证码；本地开发可用固定码 123456（app.auth.fixed-code）</p>
       </el-form>
     </el-card>
   </div>
@@ -32,7 +32,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useModulesStore } from '@/stores/modules'
 
 const email = ref('johnhan0313@gmail.com')
-const code = ref('123456')
+const code = ref('')
 const err = ref('')
 const loading = ref(false)
 const sending = ref(false)

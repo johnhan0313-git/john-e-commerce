@@ -29,6 +29,7 @@ services:
       SPRING_REDIS_HOST: john-redis
       SPRING_REDIS_PORT: "6379"
       SPRING_REDIS_DATABASE: "6"
+      # HS256 要求 ≥32 字节；Portainer 勿设成短串（如 e-cool-app），否则登录验码成功后发 token 失败
       JWT_SECRET: ${JWT_SECRET:-john-ecommerce-prod-jwt-secret-change-me-32b+}
       MINIO_ENDPOINT: http://john-minio:9000
       MINIO_ACCESS_KEY: minioadmin
