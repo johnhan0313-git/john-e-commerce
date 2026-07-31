@@ -10,7 +10,7 @@ alwaysApply: true
 ## 技术栈
 
 - Java 17 · Spring Boot 3.3.6 · MyBatis-Plus 3.5.9 · PostgreSQL · Redis · JWT · MinIO · springdoc
-- 端口 `8020`，context-path `/api`；CORS 规划 `3020/3021`
+- 端口 `8020`，context-path `/api`；CORS 规划 `3022/3021`
 - SQL：`scripts/sql/V00x__*.sql`（**不接 Flyway/Liquibase**；改 SQL 后目标库一次性执行）
 
 ## 目录与域
@@ -50,7 +50,7 @@ alwaysApply: true
 3. Security `permitAll` 路径勿重复 `/api`（context-path 已是 `/api`）
 4. `backend/target/` 勿提交构建产物
 5. 营销域命名统一 **activity**（非 campaign）；库存下沉 fulfillment 仓维度，SKU 无 stock 字段
-6. 前端 `apps/mall`(3020) / `apps/admin`(3021)：Vue3+Vite+TS；proxy `/api` → 8020；模块菜单由 `/tenant/modules` 驱动
+6. 前端 `apps/mall`(3022) / `apps/admin`(3021)：Vue3+Vite+TS；proxy `/api` → 8020；模块菜单由 `/tenant/modules` 驱动
 7. payment 子包结构：`channel/`（PayChannel SPI + Mock/Balance 实现 + ChannelRouter）、`ledger/`（账本实体+mapper+LedgerService 乐观锁）、`service/`、`controller/`、`dto/`
 8. fulfillment 库存锁定策略 FEFO（expire_date ASC），`InventoryService` 为 `@Primary`，`NoOpInventoryFacade` 带 `@ConditionalOnMissingBean`
 9. 结算三层：settlement_order（正逆向分录）→ settlement_bill（账期聚合）→ settlement（轧差结果）

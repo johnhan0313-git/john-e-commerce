@@ -44,4 +44,4 @@ app:
     secret-key: minioadmin
     bucket: john-ecommerce-test
   cors:
-    origins: http://localhost:3020,http://localhost:3021
+    origins: http://localhost:3022,http://localhost:3021

@@ -21,7 +21,7 @@ S3_TUNNEL_PORT="${JOHN_S3_TUNNEL_PORT:-19000}"
 S3_REMOTE_PORT=19000
 
 BACKEND_PORT=8020
-MALL_PORT=3020
+MALL_PORT=3022
 ADMIN_PORT=3021
 
 # 递归杀掉整棵进程树(含子进程)。mvn spring-boot:run / npm 都会再 spawn 子进程,

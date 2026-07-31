@@ -13,14 +13,14 @@ services:
       SPRING_REDIS_DATABASE: "6"
       MINIO_ENDPOINT: http://host.docker.internal:19000
       JWT_SECRET: john-ecommerce-dev-jwt-secret-change-me-32b+
-      CORS_ORIGINS: http://localhost:3020,http://localhost:3021
+      CORS_ORIGINS: http://localhost:3022,http://localhost:3021
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
   mall:
     build: ./apps/mall
     ports:
-      - "3020:80"
+      - "3022:80"
     depends_on:
       - backend
 

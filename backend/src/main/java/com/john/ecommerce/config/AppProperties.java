@@ -52,6 +52,6 @@ public class AppProperties {
 
     @Data
     public static class Cors {
-        private String origins = "http://localhost:3020,http://localhost:3021";
+        private String origins = "http://localhost:3022,http://localhost:3021";
     }
 }

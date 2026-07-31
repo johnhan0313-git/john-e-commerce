@@ -62,7 +62,8 @@ services:
         NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmmirror.com}
     container_name: john-e-commerce-mall-1
     ports:
-      - "3020:80"
+      # 3020 已被 john-shared 占用；nginx 走容器网络 john-e-commerce-mall-1:80，宿主机端口仅联调用
+      - "3022:80"
     networks:
       - default
       - john-nginx_default
