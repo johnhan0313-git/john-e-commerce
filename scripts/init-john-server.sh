@@ -50,6 +50,6 @@ done
 echo "==> Done."
 echo "    DB:       ${DB_NAME} / ${DB_NAME_TEST}"
 echo "    User:     ${DB_USER} / ${DB_PASS}"
-echo "    Admin:    phone 13800000000 / password admin123"
+echo "    Admin:    email johnhan0313@gmail.com (邮箱验证码登录)"
 echo "    Redis DB: 6 (see application.yml)"
 echo "    MinIO:    bucket john-ecommerce"
