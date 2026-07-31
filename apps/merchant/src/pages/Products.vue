@@ -1,30 +1,37 @@
 <template>
   <div>
-    <div class="toolbar">
-      <h2>本店商品</h2>
-      <el-button type="primary" @click="openCreate">创建 SPU</el-button>
+    <div class="page-header">
+      <div>
+        <h2>本店商品</h2>
+        <p class="desc">管理本店 SPU / SKU 上下架</p>
+      </div>
+      <div class="page-header-actions">
+        <el-button type="primary" @click="openCreate">创建 SPU</el-button>
+      </div>
     </div>
 
-    <el-table v-loading="loading" :data="list" stripe>
-      <el-table-column prop="id" label="ID" width="90" />
-      <el-table-column prop="name" label="名称" min-width="160" />
-      <el-table-column prop="subtitle" label="副标题" min-width="140" />
-      <el-table-column prop="status" label="状态" width="100">
-        <template #default="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
-            {{ row.status === 1 ? '上架' : '下架' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="260" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" @click="openSku(row)">SKU</el-button>
-          <el-button link type="warning" @click="toggleStatus(row)">
-            {{ row.status === 1 ? '下架' : '上架' }}
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="panel">
+      <el-table v-loading="loading" :data="list">
+        <el-table-column prop="id" label="ID" width="90" />
+        <el-table-column prop="name" label="名称" min-width="160" />
+        <el-table-column prop="subtitle" label="副标题" min-width="140" />
+        <el-table-column prop="status" label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small" effect="light">
+              {{ row.status === 1 ? '上架' : '下架' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="200" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="openSku(row)">SKU</el-button>
+            <el-button link type="warning" @click="toggleStatus(row)">
+              {{ row.status === 1 ? '下架' : '上架' }}
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
 
     <div class="pager">
       <el-pagination
@@ -58,7 +65,7 @@
     </el-dialog>
 
     <el-drawer v-model="skuVisible" :title="`SKU · ${currentSpu?.name || ''}`" size="560px">
-      <div class="toolbar">
+      <div class="drawer-toolbar">
         <span class="muted">SPU #{{ currentSpu?.id }}</span>
         <el-button type="primary" size="small" @click="openSkuCreate">新增 SKU</el-button>
       </div>
@@ -219,8 +226,10 @@ onMounted(load)
 </script>
 
 <style scoped>
-.toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.pager { margin-top: 16px; display: flex; justify-content: flex-end; }
-.muted { color: #909399; }
-h2 { margin: 0; }
+.drawer-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
 </style>

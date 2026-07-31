@@ -1,0 +1,124 @@
+:root {
+  --el-color-primary: #0ea5e9;
+  --el-color-primary-light-3: #38bdf8;
+  --el-color-primary-light-5: #7dd3fc;
+  --el-color-primary-light-7: #bae6fd;
+  --el-color-primary-light-8: #e0f2fe;
+  --el-color-primary-light-9: #f0f9ff;
+  --el-color-primary-dark-2: #0284c7;
+  --el-border-radius-base: 8px;
+  --el-font-family: var(--font-sans);
+  --el-border-color: #e2e8f0;
+  --el-border-color-light: #e2e8f0;
+  --el-bg-color-page: #f1f5f9;
+  --el-text-color-primary: #0f172a;
+  --el-text-color-regular: #334155;
+  --el-text-color-secondary: #64748b;
+}
+
+.el-button {
+  font-weight: 600;
+}
+
+.el-button--primary {
+  --el-button-bg-color: var(--color-accent);
+  --el-button-border-color: var(--color-accent);
+  --el-button-hover-bg-color: var(--color-accent-hover);
+  --el-button-hover-border-color: var(--color-accent-hover);
+}
+
+.el-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.el-table {
+  --el-table-border-color: var(--color-border);
+  --el-table-header-bg-color: #f8fafc;
+  --el-table-row-hover-bg-color: #f8fafc;
+  --el-table-header-text-color: #64748b;
+  font-size: 13px;
+}
+
+.el-table th.el-table__cell {
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.el-table td.el-table__cell,
+.el-table th.el-table__cell {
+  border-bottom-color: var(--color-border);
+}
+
+.el-dialog,
+.el-drawer {
+  font-family: var(--font-sans);
+}
+
+.el-dialog {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.el-drawer__header {
+  margin-bottom: 16px;
+  font-weight: 700;
+}
+
+.el-descriptions {
+  --el-descriptions-table-border: 1px solid var(--color-border);
+}
+
+.el-tag {
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.el-input__wrapper,
+.el-select__wrapper {
+  border-radius: 8px;
+}
+
+.el-pagination {
+  --el-pagination-button-bg-color: transparent;
+  font-weight: 500;
+}
+
+.el-menu {
+  border-right: none !important;
+  background: transparent !important;
+}
+
+.el-menu-item {
+  height: 42px !important;
+  line-height: 42px !important;
+  margin: 2px 10px !important;
+  border-radius: 8px !important;
+  color: var(--color-sidebar-text) !important;
+}
+
+.el-menu-item:hover {
+  background: rgba(148, 163, 184, 0.12) !important;
+  color: #e2e8f0 !important;
+}
+
+.el-menu-item.is-active {
+  background: var(--color-accent-soft) !important;
+  color: #7dd3fc !important;
+  font-weight: 600;
+}
+
+.el-menu-item .el-icon {
+  margin-right: 10px;
+  font-size: 16px;
+}
+
+.el-alert {
+  border-radius: 10px;
+}
+
+.el-empty__description p {
+  color: var(--color-muted);
+}

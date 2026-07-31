@@ -1,40 +1,71 @@
 <template>
   <div>
-    <h2>入驻 / 店铺</h2>
+    <div class="page-header">
+      <div>
+        <h2>入驻 / 店铺</h2>
+        <p class="desc">提交资料 · 等待运营审核 · 自动开店</p>
+      </div>
+    </div>
 
-    <template v-if="!loaded">加载中…</template>
+    <div v-if="!loaded" class="panel">
+      <div class="panel-body">加载中…</div>
+    </div>
 
-    <el-result v-else-if="me?.merchant?.status === 1 && me.shop" icon="success" title="已开店"
-      :sub-title="`店铺：${me.shop.name}`" />
+    <div v-else-if="me?.merchant?.status === 1 && me.shop" class="panel result-panel success">
+      <el-result icon="success" title="已开店" :sub-title="`店铺：${me.shop.name}`">
+        <template #extra>
+          <el-button type="primary" @click="$router.push('/products')">管理商品</el-button>
+          <el-button @click="$router.push('/dashboard')">返回概览</el-button>
+        </template>
+      </el-result>
+    </div>
 
-    <el-result v-else-if="me?.merchant?.status === 0" icon="info" title="审核中"
-      sub-title="运营审核通过后将自动创建店铺" />
+    <div v-else-if="me?.merchant?.status === 0" class="panel result-panel pending">
+      <el-result icon="info" title="审核中" sub-title="运营审核通过后将自动创建店铺">
+        <template #extra>
+          <el-button @click="$router.push('/dashboard')">返回概览</el-button>
+        </template>
+      </el-result>
+      <div class="steps">
+        <div class="step done">提交资料</div>
+        <div class="step active">运营审核</div>
+        <div class="step">开店就绪</div>
+      </div>
+    </div>
 
-    <el-result v-else-if="me?.merchant?.status === 2" icon="error" title="审核未通过"
-      sub-title="可联系运营后重新准备资料（需换账号或联系运营重置）" />
+    <div v-else-if="me?.merchant?.status === 2" class="panel result-panel fail">
+      <el-result
+        icon="error"
+        title="审核未通过"
+        sub-title="可联系运营后重新准备资料（需换账号或联系运营重置）"
+      />
+    </div>
 
-    <el-card v-else style="max-width: 520px; margin-top: 16px">
-      <el-form label-width="100px">
-        <el-form-item label="卖家/店名" required>
-          <el-input v-model="form.name" placeholder="入驻后将作为默认店铺名" />
-        </el-form-item>
-        <el-form-item label="Logo URL">
-          <el-input v-model="form.logo" />
-        </el-form-item>
-        <el-form-item label="联系人" required>
-          <el-input v-model="form.contactName" />
-        </el-form-item>
-        <el-form-item label="联系电话" required>
-          <el-input v-model="form.contactPhone" />
-        </el-form-item>
-        <el-form-item label="执照号">
-          <el-input v-model="form.licenseNo" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" :loading="saving" @click="submit">提交入驻</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
+    <div v-else class="panel form-panel">
+      <div class="panel-body">
+        <h3 class="section-title">填写入驻资料</h3>
+        <el-form label-position="top" class="apply-form">
+          <el-form-item label="卖家/店名" required>
+            <el-input v-model="form.name" placeholder="入驻后将作为默认店铺名" size="large" />
+          </el-form-item>
+          <el-form-item label="Logo URL">
+            <el-input v-model="form.logo" size="large" />
+          </el-form-item>
+          <div class="form-row">
+            <el-form-item label="联系人" required>
+              <el-input v-model="form.contactName" size="large" />
+            </el-form-item>
+            <el-form-item label="联系电话" required>
+              <el-input v-model="form.contactPhone" size="large" />
+            </el-form-item>
+          </div>
+          <el-form-item label="执照号">
+            <el-input v-model="form.licenseNo" size="large" />
+          </el-form-item>
+          <el-button type="primary" size="large" :loading="saving" @click="submit">提交入驻</el-button>
+        </el-form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -83,5 +114,71 @@ onMounted(() => {
 </script>
 
 <style scoped>
-h2 { margin: 0; }
+.form-panel {
+  max-width: 560px;
+}
+
+.apply-form {
+  max-width: 480px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.result-panel.success {
+  background:
+    linear-gradient(180deg, rgba(16, 185, 129, 0.06), transparent 40%),
+    var(--color-surface);
+}
+
+.result-panel.pending {
+  background:
+    linear-gradient(180deg, rgba(14, 165, 233, 0.06), transparent 40%),
+    var(--color-surface);
+}
+
+.result-panel.fail {
+  background:
+    linear-gradient(180deg, rgba(239, 68, 68, 0.06), transparent 40%),
+    var(--color-surface);
+}
+
+.steps {
+  display: flex;
+  gap: 8px;
+  padding: 0 32px 28px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.step {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-muted);
+  background: #f1f5f9;
+  border: 1px solid var(--color-border);
+  border-radius: 99px;
+  padding: 6px 14px;
+}
+
+.step.done {
+  color: #0f766e;
+  background: #ccfbf1;
+  border-color: #99f6e4;
+}
+
+.step.active {
+  color: #0369a1;
+  background: #e0f2fe;
+  border-color: #bae6fd;
+}
 </style>

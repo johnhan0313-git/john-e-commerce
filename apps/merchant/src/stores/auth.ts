@@ -6,8 +6,11 @@ import type { R } from '@/types'
 const TOKEN_KEY = 'merchant_token'
 const PORTAL = 'merchant'
 
+const EMAIL_KEY = 'merchant_email'
+
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem(TOKEN_KEY) || '')
+  const email = ref(localStorage.getItem(EMAIL_KEY) || '')
 
   const isLoggedIn = computed(() => !!token.value)
 
@@ -18,18 +21,24 @@ export const useAuthStore = defineStore('auth', () => {
 
   function logout() {
     token.value = ''
+    email.value = ''
     localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(EMAIL_KEY)
   }
 
-  async function sendCode(email: string) {
-    return client.post('/auth/email-code', { email, portal: PORTAL }) as Promise<R<unknown>>
+  async function sendCode(emailAddr: string) {
+    return client.post('/auth/email-code', { email: emailAddr, portal: PORTAL }) as Promise<R<unknown>>
   }
 
-  async function login(email: string, code: string) {
-    const res = await client.post('/auth/login', { email, code, portal: PORTAL }) as R<{ token: string }>
-    if (res.data?.token) setToken(res.data.token)
+  async function login(emailAddr: string, code: string) {
+    const res = await client.post('/auth/login', { email: emailAddr, code, portal: PORTAL }) as R<{ token: string }>
+    if (res.data?.token) {
+      setToken(res.data.token)
+      email.value = emailAddr
+      localStorage.setItem(EMAIL_KEY, emailAddr)
+    }
     return res
   }
 
-  return { token, isLoggedIn, setToken, logout, sendCode, login }
+  return { token, email, isLoggedIn, setToken, logout, sendCode, login }
 })

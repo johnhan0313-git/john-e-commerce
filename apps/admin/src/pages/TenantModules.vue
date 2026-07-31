@@ -1,29 +1,39 @@
 <template>
   <div>
-    <h2>模块配置</h2>
-    <p class="muted">开通 PRODUCT / TRADE / PAYMENT 等模块后，对应菜单与接口才可用。</p>
+    <div class="page-header">
+      <div>
+        <h2>模块配置</h2>
+        <p class="desc">开通 PRODUCT / TRADE / PAYMENT 等模块后，对应菜单与接口才可用</p>
+      </div>
+    </div>
 
-    <el-table v-loading="loading" :data="rows" stripe>
-      <el-table-column prop="moduleCode" label="编码" width="140" />
-      <el-table-column prop="moduleName" label="名称" width="160" />
-      <el-table-column prop="description" label="说明" min-width="200" />
-      <el-table-column label="状态" width="120">
-        <template #default="{ row }">
-          <el-tag :type="row.enabled ? 'success' : 'info'" size="small">
-            {{ row.enabled ? '已开通' : '未开通' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="140">
-        <template #default="{ row }">
-          <el-switch
-            :model-value="row.enabled"
-            :loading="row.switching"
-            @change="(val: string | number | boolean) => toggle(row, Boolean(val))"
-          />
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="panel">
+      <el-table v-loading="loading" :data="rows" class="module-table">
+        <el-table-column prop="moduleCode" label="编码" width="140">
+          <template #default="{ row }">
+            <code class="code">{{ row.moduleCode }}</code>
+          </template>
+        </el-table-column>
+        <el-table-column prop="moduleName" label="名称" width="160" />
+        <el-table-column prop="description" label="说明" min-width="200" />
+        <el-table-column label="状态" width="120">
+          <template #default="{ row }">
+            <el-tag :type="row.enabled ? 'success' : 'info'" size="small" effect="light">
+              {{ row.enabled ? '已开通' : '未开通' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="140">
+          <template #default="{ row }">
+            <el-switch
+              :model-value="row.enabled"
+              :loading="row.switching"
+              @change="(val: string | number | boolean) => toggle(row, Boolean(val))"
+            />
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
   </div>
 </template>
 
@@ -88,6 +98,16 @@ onMounted(load)
 </script>
 
 <style scoped>
-h2 { margin: 0 0 8px; }
-.muted { color: #909399; margin-bottom: 16px; }
+.code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  background: #f1f5f9;
+  color: #0369a1;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.module-table :deep(.el-table__row:hover > td.el-table__cell) {
+  background: #f0f9ff !important;
+}
 </style>
