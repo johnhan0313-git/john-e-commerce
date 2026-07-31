@@ -16,6 +16,8 @@ This project does **not** use Flyway or Liquibase. Schema changes are maintained
    - `V008__init_payment.sql`
    - `V009__init_content.sql`
    - `V010__seed_dev_admin.sql`（演示租户 + 管理员，本地开发用）
+   - …中间版本见目录…
+   - `V017__init_shop.sql`（店铺 t_shop；SPU/订单/仓增加 shop_id）
 
 Example:
 

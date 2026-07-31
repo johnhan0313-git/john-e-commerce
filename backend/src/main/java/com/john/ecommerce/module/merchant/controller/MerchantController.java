@@ -4,8 +4,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.john.ecommerce.common.module.ModuleCodes;
 import com.john.ecommerce.common.module.RequiresModule;
 import com.john.ecommerce.common.result.R;
+import com.john.ecommerce.module.fulfillment.dto.LogisticsCreateDTO;
+import com.john.ecommerce.module.fulfillment.dto.LogisticsVO;
 import com.john.ecommerce.module.merchant.dto.MerchantApplyDTO;
 import com.john.ecommerce.module.merchant.dto.MerchantAuditDTO;
+import com.john.ecommerce.module.merchant.dto.MerchantMeVO;
 import com.john.ecommerce.module.merchant.dto.MerchantVO;
 import com.john.ecommerce.module.merchant.service.MerchantService;
 import jakarta.validation.Valid;
@@ -20,6 +23,11 @@ public class MerchantController {
 
     private final MerchantService merchantService;
 
+    @GetMapping("/me")
+    public R<MerchantMeVO> me() {
+        return R.ok(merchantService.me());
+    }
+
     @PostMapping("/apply")
     public R<MerchantVO> apply(@Valid @RequestBody MerchantApplyDTO dto) {
         return R.ok(merchantService.apply(dto));
@@ -30,7 +38,7 @@ public class MerchantController {
         return R.ok(merchantService.audit(id, dto));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public R<MerchantVO> getById(@PathVariable Long id) {
         return R.ok(merchantService.getById(id));
     }

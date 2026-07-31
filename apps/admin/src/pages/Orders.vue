@@ -1,6 +1,15 @@
 <template>
   <div>
-    <h2>订单管理</h2>
+    <div class="toolbar">
+      <h2>订单管理</h2>
+      <el-input
+        v-model="shopIdFilter"
+        placeholder="店铺 ID"
+        clearable
+        style="width: 140px"
+        @change="load"
+      />
+    </div>
     <el-table v-loading="loading" :data="list" stripe>
       <el-table-column prop="id" label="ID" width="90" />
       <el-table-column prop="orderNo" label="订单号" min-width="160" />
@@ -67,6 +76,7 @@ const loading = ref(false)
 const page = ref(1)
 const size = 20
 const total = ref(0)
+const shopIdFilter = ref('')
 const detailVisible = ref(false)
 const detail = ref<Order | null>(null)
 const nextStatus = ref(0)
@@ -75,7 +85,12 @@ async function load() {
   loading.value = true
   try {
     const res = await client.get('/order', {
-      params: { page: page.value, size },
+      params: {
+        page: page.value,
+        size,
+        buyerScoped: false,
+        shopId: shopIdFilter.value.trim() ? Number(shopIdFilter.value) : undefined,
+      },
     }) as R<PageResult<Order>>
     list.value = res.data?.records || []
     total.value = res.data?.total || 0
@@ -105,7 +120,13 @@ onMounted(load)
 </script>
 
 <style scoped>
-h2 { margin: 0 0 16px; }
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+h2 { margin: 0; }
 .pager {
   margin-top: 16px;
   display: flex;

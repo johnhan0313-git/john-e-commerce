@@ -6,6 +6,7 @@ import lombok.Data;
 public class WarehouseVO {
     private Long id;
     private Long merchantId;
+    private Long shopId;
     private String code;
     private String name;
     private String address;

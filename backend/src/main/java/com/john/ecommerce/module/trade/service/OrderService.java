@@ -103,6 +103,7 @@ public class OrderService {
             order.setOrderNo(generateOrderNo());
             order.setUserId(userId);
             order.setMerchantId(bucket.getMerchantId());
+            order.setShopId(bucket.getShopId());
             order.setWarehouseId(bucket.getWarehouseId());
             order.setSplitReason(bucket.getSplitReason());
             order.setOrderType(dto.getOrderType() != null ? dto.getOrderType() : 0);
@@ -186,10 +187,20 @@ public class OrderService {
     }
 
     public Page<OrderVO> list(int page, int size, Integer status) {
+        return list(page, size, status, null, null, true);
+    }
+
+    public Page<OrderVO> listForShop(int page, int size, Integer status, Long shopId) {
+        return list(page, size, status, shopId, null, false);
+    }
+
+    public Page<OrderVO> list(int page, int size, Integer status, Long shopId, Long merchantId, boolean buyerScoped) {
         Long userId = UserContext.getCurrentUserId();
         LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<Order>()
-                .eq(userId != null, Order::getUserId, userId)
+                .eq(buyerScoped && userId != null, Order::getUserId, userId)
                 .eq(status != null, Order::getStatus, status)
+                .eq(shopId != null, Order::getShopId, shopId)
+                .eq(merchantId != null, Order::getMerchantId, merchantId)
                 .orderByDesc(Order::getCreatedAt);
         Page<Order> p = orderMapper.selectPage(new Page<>(page, size), wrapper);
 
@@ -318,6 +329,7 @@ public class OrderService {
         vo.setOrderNo(o.getOrderNo());
         vo.setUserId(o.getUserId());
         vo.setMerchantId(o.getMerchantId());
+        vo.setShopId(o.getShopId());
         vo.setWarehouseId(o.getWarehouseId());
         vo.setOrderType(o.getOrderType());
         vo.setStatus(o.getStatus());

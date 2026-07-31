@@ -11,6 +11,7 @@ import java.util.List;
 @Data
 public class OrderSplitBucket {
     private Long merchantId;
+    private Long shopId;
     private Long warehouseId;
     private String splitReason;
     private List<SplitLine> lines = new ArrayList<>();

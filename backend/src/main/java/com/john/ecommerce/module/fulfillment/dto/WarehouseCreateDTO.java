@@ -10,5 +10,6 @@ public class WarehouseCreateDTO {
     @NotBlank(message = "仓库名称不能为空")
     private String name;
     private Long merchantId;
+    private Long shopId;
     private String address;
 }

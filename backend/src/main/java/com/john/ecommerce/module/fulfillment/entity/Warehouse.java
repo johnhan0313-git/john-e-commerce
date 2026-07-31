@@ -14,6 +14,7 @@ import java.util.Map;
 @TableName(value = "t_warehouse", autoResultMap = true)
 public class Warehouse extends BaseEntity {
     private Long merchantId;
+    private Long shopId;
     private String code;
     private String name;
     private String address;

@@ -11,6 +11,7 @@ public class SpuCreateDTO {
     private String subtitle;
     private Long categoryId;
     private Long merchantId;
+    private Long shopId;
     private Long brandId;
     private String productCode;
     private List<String> mainImages;

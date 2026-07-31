@@ -2,7 +2,16 @@
   <div>
     <div class="toolbar">
       <h2>商品管理</h2>
-      <el-button type="primary" @click="openCreate">创建 SPU</el-button>
+      <div class="toolbar-right">
+        <el-input
+          v-model="shopIdFilter"
+          placeholder="店铺 ID"
+          clearable
+          style="width: 140px; margin-right: 8px"
+          @change="load"
+        />
+        <el-button type="primary" @click="openCreate">创建 SPU</el-button>
+      </div>
     </div>
 
     <el-table v-loading="loading" :data="list" stripe>
@@ -106,6 +115,7 @@ const loading = ref(false)
 const page = ref(1)
 const size = 20
 const total = ref(0)
+const shopIdFilter = ref('')
 
 const createVisible = ref(false)
 const saving = ref(false)
@@ -131,7 +141,11 @@ async function load() {
   loading.value = true
   try {
     const res = await client.get('/product', {
-      params: { page: page.value, size },
+      params: {
+        page: page.value,
+        size,
+        shopId: shopIdFilter.value.trim() ? Number(shopIdFilter.value) : undefined,
+      },
     }) as R<PageResult<Spu>>
     list.value = res.data?.records || []
     total.value = res.data?.total || 0
@@ -243,6 +257,10 @@ onMounted(load)
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+}
+.toolbar-right {
+  display: flex;
+  align-items: center;
 }
 .pager {
   margin-top: 16px;

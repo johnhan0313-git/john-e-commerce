@@ -12,6 +12,7 @@ public class OrderVO {
     private String orderNo;
     private Long userId;
     private Long merchantId;
+    private Long shopId;
     private Long warehouseId;
     private Integer orderType;
     private Integer status;

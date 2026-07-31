@@ -22,6 +22,7 @@ public class ProductService {
         spu.setSubtitle(dto.getSubtitle());
         spu.setCategoryId(dto.getCategoryId());
         spu.setMerchantId(dto.getMerchantId());
+        spu.setShopId(dto.getShopId());
         spu.setBrandId(dto.getBrandId());
         spu.setProductCode(dto.getProductCode());
         spu.setMainImages(dto.getMainImages());
@@ -41,8 +42,14 @@ public class ProductService {
     }
 
     public Page<SpuVO> list(int page, int size, Integer status) {
+        return list(page, size, status, null, null);
+    }
+
+    public Page<SpuVO> list(int page, int size, Integer status, Long shopId, Long merchantId) {
         LambdaQueryWrapper<Spu> wrapper = new LambdaQueryWrapper<Spu>()
                 .eq(status != null, Spu::getStatus, status)
+                .eq(shopId != null, Spu::getShopId, shopId)
+                .eq(merchantId != null, Spu::getMerchantId, merchantId)
                 .orderByDesc(Spu::getCreatedAt);
         Page<Spu> p = spuMapper.selectPage(new Page<>(page, size), wrapper);
         Page<SpuVO> result = new Page<>();
@@ -64,6 +71,7 @@ public class ProductService {
         SpuVO vo = new SpuVO();
         vo.setId(s.getId());
         vo.setMerchantId(s.getMerchantId());
+        vo.setShopId(s.getShopId());
         vo.setCategoryId(s.getCategoryId());
         vo.setBrandId(s.getBrandId());
         vo.setProductCode(s.getProductCode());

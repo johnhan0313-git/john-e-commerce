@@ -90,6 +90,26 @@ public class TestDataSeeder {
     public void ensureSchemaPatches() {
         // Idempotent patches for local DBs that may lag scripts/sql
         jdbcTemplate.execute("ALTER TABLE t_order ADD COLUMN IF NOT EXISTS cancel_by BIGINT");
+        jdbcTemplate.execute("ALTER TABLE t_spu ADD COLUMN IF NOT EXISTS shop_id BIGINT");
+        jdbcTemplate.execute("ALTER TABLE t_order ADD COLUMN IF NOT EXISTS shop_id BIGINT");
+        jdbcTemplate.execute("ALTER TABLE t_warehouse ADD COLUMN IF NOT EXISTS shop_id BIGINT");
+        jdbcTemplate.execute("""
+                CREATE TABLE IF NOT EXISTS t_shop (
+                    id              BIGINT PRIMARY KEY,
+                    tenant_id       BIGINT NOT NULL,
+                    merchant_id     BIGINT NOT NULL,
+                    name            VARCHAR(100) NOT NULL,
+                    logo            VARCHAR(500),
+                    status          SMALLINT NOT NULL DEFAULT 1,
+                    extra           JSONB NOT NULL DEFAULT '{}',
+                    delete_flag     SMALLINT NOT NULL DEFAULT 0,
+                    created_at      BIGINT NOT NULL,
+                    created_by      BIGINT,
+                    updated_at      BIGINT NOT NULL,
+                    updated_by      BIGINT,
+                    idempotent_key  VARCHAR(64)
+                )
+                """);
         jdbcTemplate.execute("""
                 CREATE UNIQUE INDEX IF NOT EXISTS uk_t_user_email
                 ON t_user (email) WHERE delete_flag = 0 AND email IS NOT NULL

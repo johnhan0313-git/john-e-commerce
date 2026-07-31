@@ -27,6 +27,7 @@ public class WarehouseService {
         w.setCode(dto.getCode());
         w.setName(dto.getName());
         w.setMerchantId(dto.getMerchantId());
+        w.setShopId(dto.getShopId());
         w.setAddress(dto.getAddress());
         w.setStatus(1);
         warehouseMapper.insert(w);
@@ -70,6 +71,7 @@ public class WarehouseService {
         WarehouseVO vo = new WarehouseVO();
         vo.setId(w.getId());
         vo.setMerchantId(w.getMerchantId());
+        vo.setShopId(w.getShopId());
         vo.setCode(w.getCode());
         vo.setName(w.getName());
         vo.setAddress(w.getAddress());

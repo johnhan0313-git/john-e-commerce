@@ -13,6 +13,7 @@ import java.util.List;
 @TableName(value = "t_spu", autoResultMap = true)
 public class Spu extends BaseEntity {
     private Long merchantId;
+    private Long shopId;
     private Long categoryId;
     private Long brandId;
     private String productCode;

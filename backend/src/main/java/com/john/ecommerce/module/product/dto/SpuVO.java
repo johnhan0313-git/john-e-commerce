@@ -7,6 +7,7 @@ import java.util.List;
 public class SpuVO {
     private Long id;
     private Long merchantId;
+    private Long shopId;
     private Long categoryId;
     private Long brandId;
     private String productCode;

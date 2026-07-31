@@ -12,6 +12,8 @@ const router = createRouter({
       children: [
         { path: '', redirect: '/dashboard' },
         { path: 'dashboard', component: () => import('@/pages/Dashboard.vue') },
+        { path: 'merchants', component: () => import('@/pages/Merchants.vue'), meta: { module: 'merchant' } },
+        { path: 'shops', component: () => import('@/pages/Shops.vue'), meta: { module: 'merchant' } },
         { path: 'products', component: () => import('@/pages/Products.vue'), meta: { module: 'product' } },
         { path: 'orders', component: () => import('@/pages/Orders.vue'), meta: { module: 'trade' } },
         { path: 'tenant/modules', component: () => import('@/pages/TenantModules.vue') },

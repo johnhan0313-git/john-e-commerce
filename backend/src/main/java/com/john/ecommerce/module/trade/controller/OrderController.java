@@ -38,8 +38,12 @@ public class OrderController {
     @GetMapping
     public R<Page<OrderVO>> list(@RequestParam(defaultValue = "1") int page,
                                  @RequestParam(defaultValue = "20") int size,
-                                 @RequestParam(required = false) Integer status) {
-        return R.ok(orderService.list(page, size, status));
+                                 @RequestParam(required = false) Integer status,
+                                 @RequestParam(required = false) Long shopId,
+                                 @RequestParam(required = false) Long merchantId,
+                                 @RequestParam(defaultValue = "true") boolean buyerScoped) {
+        // 运营端传 buyerScoped=false 并可选 shopId/merchantId；买家端默认按当前用户过滤
+        return R.ok(orderService.list(page, size, status, shopId, merchantId, buyerScoped));
     }
 
     @PutMapping("/{id}/status")

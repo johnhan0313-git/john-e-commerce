@@ -6,6 +6,7 @@ RUN_DIR="$ROOT/.run"
 BACKEND_DIR="$ROOT/backend"
 MALL_DIR="$ROOT/apps/mall"
 ADMIN_DIR="$ROOT/apps/admin"
+MERCHANT_DIR="$ROOT/apps/merchant"
 mkdir -p "$RUN_DIR"
 
 # SSH 隧道: DB/Redis/MinIO 只在 john-server 本机可达。
@@ -23,6 +24,7 @@ S3_REMOTE_PORT=19000
 BACKEND_PORT=8020
 MALL_PORT=3022
 ADMIN_PORT=3021
+MERCHANT_PORT=3023
 
 # 递归杀掉整棵进程树(含子进程)。mvn spring-boot:run / npm 都会再 spawn 子进程,
 # 只 kill pid 文件里的父进程会留下孤儿占端口。
@@ -204,9 +206,11 @@ stop_svc() {
 stop_all() {
   stop_svc mall
   stop_svc admin
+  stop_svc merchant
   stop_svc backend
   _free_port "$MALL_PORT"
   _free_port "$ADMIN_PORT"
+  _free_port "$MERCHANT_PORT"
   _free_port "$BACKEND_PORT"
 }
 
@@ -254,14 +258,18 @@ start_admin() {
   _start_npm_app admin "$ADMIN_DIR" "$ADMIN_PORT"
 }
 
+start_merchant() {
+  _start_npm_app merchant "$MERCHANT_DIR" "$MERCHANT_PORT"
+}
+
 _print_urls() {
   echo "john-e-commerce started:"
-  echo "  Mall:   http://localhost:${MALL_PORT}"
-  echo "  Admin:  http://localhost:${ADMIN_PORT}"
-  echo "  API:    http://localhost:${BACKEND_PORT}/api"
-  echo "  Docs:   http://localhost:${BACKEND_PORT}/api/swagger-ui.html"
-  echo "  Login:  13800000000 / admin123"
-  echo "  Logs:   $RUN_DIR/*.log"
+  echo "  Mall:      http://localhost:${MALL_PORT}"
+  echo "  Admin:     http://localhost:${ADMIN_PORT}"
+  echo "  Merchant:  http://localhost:${MERCHANT_PORT}"
+  echo "  API:       http://localhost:${BACKEND_PORT}/api"
+  echo "  Docs:      http://localhost:${BACKEND_PORT}/api/swagger-ui.html"
+  echo "  Logs:      $RUN_DIR/*.log"
 }
 
 _status_line() {
@@ -281,6 +289,7 @@ print_status() {
   _status_line "backend     " "$BACKEND_PORT"
   _status_line "mall        " "$MALL_PORT"
   _status_line "admin       " "$ADMIN_PORT"
+  _status_line "merchant    " "$MERCHANT_PORT"
 }
 
 case "${1:-start}" in
@@ -290,6 +299,7 @@ case "${1:-start}" in
     start_backend
     start_mall
     start_admin
+    start_merchant
     _print_urls
     ;;
   stop)
@@ -304,6 +314,7 @@ case "${1:-start}" in
     start_backend
     start_mall
     start_admin
+    start_merchant
     _print_urls
     ;;
   backend)
@@ -325,11 +336,17 @@ case "${1:-start}" in
     start_admin
     echo "Admin started. http://localhost:${ADMIN_PORT}  Log: $RUN_DIR/admin.log"
     ;;
+  merchant)
+    stop_svc merchant
+    _free_port "$MERCHANT_PORT"
+    start_merchant
+    echo "Merchant started. http://localhost:${MERCHANT_PORT}  Log: $RUN_DIR/merchant.log"
+    ;;
   status)
     print_status
     ;;
   *)
-    echo "Usage: $0 {start|stop|restart|backend|mall|admin|status}"
+    echo "Usage: $0 {start|stop|restart|backend|mall|admin|merchant|status}"
     exit 1
     ;;
 esac

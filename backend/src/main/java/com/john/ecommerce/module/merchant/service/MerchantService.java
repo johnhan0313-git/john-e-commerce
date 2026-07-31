@@ -6,11 +6,14 @@ import com.john.ecommerce.common.context.UserContext;
 import com.john.ecommerce.common.exception.BizException;
 import com.john.ecommerce.module.merchant.dto.MerchantApplyDTO;
 import com.john.ecommerce.module.merchant.dto.MerchantAuditDTO;
+import com.john.ecommerce.module.merchant.dto.MerchantMeVO;
 import com.john.ecommerce.module.merchant.dto.MerchantVO;
 import com.john.ecommerce.module.merchant.entity.Merchant;
+import com.john.ecommerce.module.merchant.entity.Shop;
 import com.john.ecommerce.module.merchant.mapper.MerchantMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
@@ -19,6 +22,7 @@ import java.math.BigDecimal;
 public class MerchantService {
 
     private final MerchantMapper merchantMapper;
+    private final ShopService shopService;
 
     public MerchantVO apply(MerchantApplyDTO dto) {
         Long userId = UserContext.getCurrentUserId();
@@ -41,17 +45,60 @@ public class MerchantService {
         return toVO(merchant);
     }
 
+    @Transactional
     public MerchantVO audit(Long id, MerchantAuditDTO dto) {
         Merchant merchant = require(id);
         if (merchant.getStatus() != 0) throw new BizException("当前状态不可审核");
         if (Boolean.TRUE.equals(dto.getApproved())) {
             merchant.setStatus(1);
             merchant.setSettledAt(System.currentTimeMillis());
+            merchantMapper.updateById(merchant);
+            shopService.createDefaultShop(merchant.getId(), merchant.getName(), merchant.getLogo());
         } else {
             merchant.setStatus(2);
+            merchantMapper.updateById(merchant);
         }
-        merchantMapper.updateById(merchant);
         return toVO(merchant);
+    }
+
+    public MerchantMeVO me() {
+        Long userId = UserContext.getCurrentUserId();
+        if (userId == null) throw new BizException("用户未登录");
+        Merchant merchant = merchantMapper.selectOne(new LambdaQueryWrapper<Merchant>()
+                .eq(Merchant::getUserId, userId));
+        if (merchant == null) {
+            return null;
+        }
+        MerchantMeVO vo = new MerchantMeVO();
+        vo.setMerchant(toVO(merchant));
+        Shop shop = shopService.findDefaultByMerchantId(merchant.getId());
+        if (shop != null) {
+            vo.setShop(shopService.toVO(shop));
+        }
+        return vo;
+    }
+
+    public Merchant findByCurrentUser() {
+        Long userId = UserContext.getCurrentUserId();
+        if (userId == null) throw new BizException("用户未登录");
+        return merchantMapper.selectOne(new LambdaQueryWrapper<Merchant>()
+                .eq(Merchant::getUserId, userId));
+    }
+
+    public Merchant requireApproved() {
+        Merchant merchant = findByCurrentUser();
+        if (merchant == null) throw new BizException("尚未入驻");
+        if (merchant.getStatus() == null || merchant.getStatus() != 1) {
+            throw new BizException("卖家未通过审核");
+        }
+        return merchant;
+    }
+
+    public Shop requireCurrentShop() {
+        Merchant merchant = requireApproved();
+        Shop shop = shopService.findDefaultByMerchantId(merchant.getId());
+        if (shop == null) throw new BizException("店铺不存在");
+        return shop;
     }
 
     public MerchantVO getById(Long id) {

@@ -45,7 +45,7 @@ services:
       SMTP_USE_SSL: ${SMTP_USE_SSL:-true}
       AUTH_FIXED_CODE: ${AUTH_FIXED_CODE:-}
       # 生产走 nginx 同源反代(mall/eadmin 域名下 /api → backend),CORS 仅兜底
-      CORS_ORIGINS: ${CORS_ORIGINS:-https://mall.cool-app.me,https://eadmin.cool-app.me,http://mall.cool-app.me,http://eadmin.cool-app.me}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://mall.cool-app.me,https://eadmin.cool-app.me,https://merchant.cool-app.me,http://mall.cool-app.me,http://eadmin.cool-app.me,http://merchant.cool-app.me}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75.0}
       HTTP_PROXY: ${HTTP_PROXY:-}
@@ -81,6 +81,22 @@ services:
     container_name: john-e-commerce-admin-1
     ports:
       - "3021:80"
+    networks:
+      - default
+      - john-nginx_default
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  merchant:
+    build:
+      context: ./apps/merchant
+      dockerfile: Dockerfile
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmmirror.com}
+    container_name: john-e-commerce-merchant-1
+    ports:
+      - "3023:80"
     networks:
       - default
       - john-nginx_default

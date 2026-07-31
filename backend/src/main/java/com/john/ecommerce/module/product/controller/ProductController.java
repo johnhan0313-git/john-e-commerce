@@ -32,8 +32,10 @@ public class ProductController {
     @GetMapping
     public R<Page<SpuVO>> list(@RequestParam(defaultValue = "1") int page,
                                @RequestParam(defaultValue = "20") int size,
-                               @RequestParam(required = false) Integer status) {
-        return R.ok(productService.list(page, size, status));
+                               @RequestParam(required = false) Integer status,
+                               @RequestParam(required = false) Long shopId,
+                               @RequestParam(required = false) Long merchantId) {
+        return R.ok(productService.list(page, size, status, shopId, merchantId));
     }
 
     @PutMapping("/{id}/status")
