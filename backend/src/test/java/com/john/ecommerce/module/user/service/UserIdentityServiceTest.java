@@ -1,6 +1,5 @@
 package com.john.ecommerce.module.user.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.john.ecommerce.common.context.TenantContext;
 import com.john.ecommerce.module.user.entity.UserIdentity;
 import com.john.ecommerce.module.user.identity.IdentityCodes;
@@ -17,6 +16,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,10 +32,9 @@ class UserIdentityServiceTest {
 
     @Test
     void ensureInsertsWhenMissing() {
-        TenantContext.setTenantId(1L);
-        when(userIdentityMapper.selectOne(any())).thenReturn(null);
+        when(userIdentityMapper.selectByUserAndCode(10L, IdentityCodes.BUYER)).thenReturn(null);
 
-        service.ensure(10L, IdentityCodes.BUYER);
+        service.ensure(10L, IdentityCodes.BUYER, 1L);
 
         ArgumentCaptor<UserIdentity> cap = ArgumentCaptor.forClass(UserIdentity.class);
         verify(userIdentityMapper).insert(cap.capture());
@@ -47,15 +46,14 @@ class UserIdentityServiceTest {
 
     @Test
     void ensureReactivatesDisabled() {
-        TenantContext.setTenantId(1L);
         UserIdentity existing = new UserIdentity();
         existing.setId(1L);
         existing.setUserId(10L);
         existing.setIdentityCode(IdentityCodes.OPS);
         existing.setStatus(0);
-        when(userIdentityMapper.selectOne(any())).thenReturn(existing);
+        when(userIdentityMapper.selectByUserAndCode(10L, IdentityCodes.OPS)).thenReturn(existing);
 
-        service.ensure(10L, IdentityCodes.OPS);
+        service.ensure(10L, IdentityCodes.OPS, 1L);
 
         verify(userIdentityMapper).updateById(existing);
         assertThat(existing.getStatus()).isEqualTo(1);
@@ -63,20 +61,16 @@ class UserIdentityServiceTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
-    void listActiveCodesFiltersAndOrders() {
-        UserIdentity buyer = new UserIdentity();
-        buyer.setIdentityCode(IdentityCodes.BUYER);
-        UserIdentity ops = new UserIdentity();
-        ops.setIdentityCode(IdentityCodes.OPS);
-        when(userIdentityMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(buyer, ops));
+    void listActiveCodesUsesIgnoredQuery() {
+        when(userIdentityMapper.listActiveCodesByUserId(1L))
+                .thenReturn(List.of(IdentityCodes.BUYER, IdentityCodes.OPS));
 
         assertThat(service.listActiveCodes(1L)).containsExactly(IdentityCodes.BUYER, IdentityCodes.OPS);
     }
 
     @Test
     void hasChecksActiveCount() {
-        when(userIdentityMapper.selectCount(any())).thenReturn(1L);
+        when(userIdentityMapper.countActive(eq(1L), eq(IdentityCodes.OPS))).thenReturn(1L);
         assertThat(service.has(1L, IdentityCodes.OPS)).isTrue();
     }
 }

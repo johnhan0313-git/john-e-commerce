@@ -123,24 +123,13 @@ public class UserService {
      * mall → buyer；merchant → buyer+seller；admin 不自动赋权。
      */
     private void ensurePortalIdentities(User user, String portal) {
-        Long prev = TenantContext.getTenantId();
-        if (prev == null && user.getTenantId() != null) {
-            TenantContext.setTenantId(user.getTenantId());
+        if (PORTAL_ADMIN.equals(portal)) {
+            return;
         }
-        try {
-            if (PORTAL_ADMIN.equals(portal)) {
-                return;
-            }
-            userIdentityService.ensureBuyer(user.getId());
-            if (PORTAL_MERCHANT.equals(portal)) {
-                userIdentityService.ensureSeller(user.getId());
-            }
-        } finally {
-            if (prev == null) {
-                TenantContext.clear();
-            } else {
-                TenantContext.setTenantId(prev);
-            }
+        Long tenantId = user.getTenantId();
+        userIdentityService.ensureBuyer(user.getId(), tenantId);
+        if (PORTAL_MERCHANT.equals(portal)) {
+            userIdentityService.ensureSeller(user.getId(), tenantId);
         }
     }
 
@@ -171,7 +160,7 @@ public class UserService {
         user.setUserType(0);
         user.setStatus(1);
         userMapper.insert(user);
-        userIdentityService.ensureBuyer(user.getId());
+        userIdentityService.ensureBuyer(user.getId(), tenantId);
         return toVO(user);
     }
 
@@ -194,8 +183,8 @@ public class UserService {
             user.setStatus(1);
             user.setDeleteFlag(0);
             userMapper.insert(user);
-            userIdentityService.ensureBuyer(user.getId());
-            userIdentityService.ensureOps(user.getId());
+            userIdentityService.ensureBuyer(user.getId(), tenantId);
+            userIdentityService.ensureOps(user.getId(), tenantId);
             return user;
         } finally {
             if (prev == null) {

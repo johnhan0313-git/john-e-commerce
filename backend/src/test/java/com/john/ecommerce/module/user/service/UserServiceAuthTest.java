@@ -86,7 +86,7 @@ class UserServiceAuthTest {
         verify(userMapper).insert(cap.capture());
         assertThat(cap.getValue().getEmail()).isEqualTo("buyer@example.com");
         assertThat(cap.getValue().getTenantId()).isEqualTo(1L);
-        verify(userIdentityService).ensureBuyer(99L);
+        verify(userIdentityService).ensureBuyer(99L, 1L);
         assertThat(vo.getUser().getIdentities()).containsExactly(IdentityCodes.BUYER);
         assertThat(vo.getToken()).isNotBlank();
         verify(emailCodeService).consume("buyer@example.com");
@@ -110,8 +110,8 @@ class UserServiceAuthTest {
 
         LoginVO vo = userService.login(dto, 1L);
 
-        verify(userIdentityService).ensureBuyer(5L);
-        verify(userIdentityService).ensureSeller(5L);
+        verify(userIdentityService).ensureBuyer(5L, 1L);
+        verify(userIdentityService).ensureSeller(5L, 1L);
         assertThat(vo.getUser().getIdentities()).contains(IdentityCodes.BUYER, IdentityCodes.SELLER);
     }
 
