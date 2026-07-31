@@ -12,4 +12,7 @@ public class LoginDTO {
 
     @NotBlank(message = "验证码不能为空")
     private String code;
+
+    /** mall / merchant / admin；admin 不自动注册且需管理员身份 */
+    private String portal;
 }

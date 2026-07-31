@@ -3,6 +3,8 @@ import { computed, ref } from 'vue'
 import client from '@/api/client'
 import type { LoginVO, R, UserInfo } from '@/types'
 
+const PORTAL = 'mall'
+
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('token') || '')
   const user = ref<UserInfo | null>(null)
@@ -10,11 +12,11 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoggedIn = computed(() => !!token.value)
 
   async function sendEmailCode(email: string) {
-    await client.post('/auth/email-code', { email })
+    await client.post('/auth/email-code', { email, portal: PORTAL })
   }
 
   async function login(email: string, code: string) {
-    const res = await client.post('/auth/login', { email, code }) as R<LoginVO>
+    const res = await client.post('/auth/login', { email, code, portal: PORTAL }) as R<LoginVO>
     token.value = res.data.token
     user.value = res.data.user
     localStorage.setItem('token', token.value)

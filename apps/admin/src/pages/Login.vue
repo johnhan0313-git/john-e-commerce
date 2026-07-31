@@ -2,14 +2,15 @@
   <div class="login-wrap">
     <el-card class="login-card">
       <h2>管理后台登录</h2>
+      <p class="sub">使用已开通的管理员邮箱 + 验证码登录（无需密码）</p>
       <el-form label-position="top" @submit.prevent="onSubmit">
         <el-form-item label="邮箱">
           <el-input v-model="email" placeholder="johnhan0313@gmail.com" />
         </el-form-item>
         <el-form-item label="验证码">
           <div class="code-row">
-            <el-input v-model="code" placeholder="6 位验证码" />
-            <el-button :disabled="cooldown > 0 || sending" @click="sendCode">
+            <el-input v-model="code" placeholder="6 位验证码" maxlength="6" />
+            <el-button :disabled="cooldown > 0 || sending || !email.trim()" @click="sendCode">
               {{ cooldown > 0 ? `${cooldown}s` : '获取验证码' }}
             </el-button>
           </div>
@@ -94,6 +95,13 @@ onUnmounted(() => {
 
 .login-card {
   width: min(100% - 32px, 400px);
+}
+
+.sub {
+  margin: -8px 0 16px;
+  font-size: 13px;
+  color: #909399;
+  line-height: 1.5;
 }
 
 .code-row {

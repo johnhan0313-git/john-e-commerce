@@ -23,7 +23,8 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public R<LoginVO> login(@Valid @RequestBody LoginDTO dto) {
-        return R.ok(userService.login(dto));
+    public R<LoginVO> login(@Valid @RequestBody LoginDTO dto,
+                            @RequestHeader(value = "X-Tenant-Id", required = false) Long tenantId) {
+        return R.ok(userService.login(dto, tenantId));
     }
 }

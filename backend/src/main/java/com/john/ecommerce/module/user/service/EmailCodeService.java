@@ -32,8 +32,8 @@ public class EmailCodeService {
                 ? fixedCode.trim()
                 : String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
         stringRedisTemplate.opsForValue().set(KEY_PREFIX + normalized, code, codeTtlSeconds, TimeUnit.SECONDS);
-        emailSender.send(normalized, "登录验证码",
-                "您的登录验证码是 " + code + "，" + (codeTtlSeconds / 60) + " 分钟内有效。");
+        emailSender.send(normalized, "登录/注册验证码",
+                "您的验证码是 " + code + "，" + (codeTtlSeconds / 60) + " 分钟内有效。未注册邮箱验证通过后将自动开通账号。");
     }
 
     /** 校验验证码，不消费（登录发 token 失败时可重试同一验证码）。 */

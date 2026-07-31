@@ -14,7 +14,7 @@
             <span class="muted">已登录</span>
             <button class="btn btn-ghost" type="button" @click="onLogout">退出</button>
           </template>
-          <router-link v-else class="btn" to="/login">登录</router-link>
+          <router-link v-else class="btn" to="/login">登录 / 注册</router-link>
         </div>
       </div>
     </header>

@@ -4,6 +4,7 @@ import client from '@/api/client'
 import type { R } from '@/types'
 
 const TOKEN_KEY = 'merchant_token'
+const PORTAL = 'merchant'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem(TOKEN_KEY) || '')
@@ -21,11 +22,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function sendCode(email: string) {
-    return client.post('/auth/email-code', { email }) as Promise<R<unknown>>
+    return client.post('/auth/email-code', { email, portal: PORTAL }) as Promise<R<unknown>>
   }
 
   async function login(email: string, code: string) {
-    const res = await client.post('/auth/login', { email, code }) as R<{ token: string }>
+    const res = await client.post('/auth/login', { email, code, portal: PORTAL }) as R<{ token: string }>
     if (res.data?.token) setToken(res.data.token)
     return res
   }

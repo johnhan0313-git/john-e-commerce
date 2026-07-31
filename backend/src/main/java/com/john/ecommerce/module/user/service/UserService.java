@@ -11,7 +11,6 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -22,8 +21,9 @@ import java.util.Date;
 @RequiredArgsConstructor
 public class UserService {
 
+    private static final String PORTAL_ADMIN = "admin";
+
     private final UserMapper userMapper;
-    private final PasswordEncoder passwordEncoder;
     private final EmailCodeService emailCodeService;
 
     @Value("${app.jwt.secret:john-ecommerce-dev-jwt-secret-change-me-32b+}")
@@ -32,36 +32,78 @@ public class UserService {
     @Value("${app.jwt.expire-ms:604800000}")
     private long jwtExpireMs;
 
+    @Value("${app.auth.default-tenant-id:1}")
+    private long defaultTenantId;
+
     public void sendLoginCode(EmailCodeSendDTO dto) {
         String email = EmailCodeService.normalize(dto.getEmail());
-        User user = userMapper.selectByEmail(email);
-        if (user == null) {
-            throw new BizException("该邮箱未注册");
+        if (!StringUtils.hasText(email)) {
+            throw new BizException("邮箱不能为空");
         }
-        if (user.getStatus() != 1) {
+        User user = userMapper.selectByEmail(email);
+        if (user != null && user.getStatus() != null && user.getStatus() != 1) {
             throw new BizException("账号已被禁用");
+        }
+        // 管理后台仅允许已有账号发码；买家/卖家未注册也可发码，登录时自动开通
+        if (isAdminPortal(dto.getPortal()) && user == null) {
+            throw new BizException("该邮箱未注册");
         }
         emailCodeService.sendLoginCode(email);
     }
 
-    public LoginVO login(LoginDTO dto) {
+    public LoginVO login(LoginDTO dto, Long headerTenantId) {
         String email = EmailCodeService.normalize(dto.getEmail());
         // 先校验不消费：JWT 签发失败时验证码仍可重试，避免误报「已过期」
         emailCodeService.verify(email, dto.getCode());
 
         User user = userMapper.selectByEmail(email);
         if (user == null) {
-            throw new BizException("该邮箱未注册");
-        }
-        if (user.getStatus() != 1) {
+            if (isAdminPortal(dto.getPortal())) {
+                throw new BizException("该邮箱未注册");
+            }
+            user = registerPasswordless(email, headerTenantId);
+        } else if (user.getStatus() != null && user.getStatus() != 1) {
             throw new BizException("账号已被禁用");
+        } else if (isAdminPortal(dto.getPortal()) && (user.getUserType() == null || user.getUserType() != 1)) {
+            throw new BizException("无管理后台权限");
         }
+
         String token = generateToken(user);
         emailCodeService.consume(email);
         LoginVO vo = new LoginVO();
         vo.setToken(token);
         vo.setUser(toVO(user));
         return vo;
+    }
+
+    /**
+     * 邮箱验证码通过后自动开通买家/卖家账号（无密码）。
+     */
+    private User registerPasswordless(String email, Long headerTenantId) {
+        Long tenantId = headerTenantId != null ? headerTenantId : defaultTenantId;
+        Long prev = TenantContext.getTenantId();
+        TenantContext.setTenantId(tenantId);
+        try {
+            User existing = userMapper.selectByEmail(email);
+            if (existing != null) {
+                return existing;
+            }
+            User user = new User();
+            user.setTenantId(tenantId);
+            user.setEmail(email);
+            user.setNickname(nicknameFromEmail(email));
+            user.setUserType(0);
+            user.setStatus(1);
+            user.setDeleteFlag(0);
+            userMapper.insert(user);
+            return user;
+        } finally {
+            if (prev == null) {
+                TenantContext.clear();
+            } else {
+                TenantContext.setTenantId(prev);
+            }
+        }
     }
 
     public UserVO create(UserCreateDTO dto) {
@@ -85,10 +127,9 @@ public class UserService {
         user.setTenantId(tenantId);
         user.setPhone(dto.getPhone());
         user.setEmail(email);
-        user.setNickname(dto.getNickname());
-        if (StringUtils.hasText(dto.getPassword())) {
-            user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
-        }
+        user.setNickname(StringUtils.hasText(dto.getNickname())
+                ? dto.getNickname()
+                : nicknameFromEmail(email));
         user.setUserType(0);
         user.setStatus(1);
         userMapper.insert(user);
@@ -169,5 +210,14 @@ public class UserService {
         vo.setStatus(u.getStatus());
         vo.setCreatedAt(u.getCreatedAt());
         return vo;
+    }
+
+    private static boolean isAdminPortal(String portal) {
+        return PORTAL_ADMIN.equalsIgnoreCase(portal);
+    }
+
+    private static String nicknameFromEmail(String email) {
+        int at = email.indexOf('@');
+        return at > 0 ? email.substring(0, at) : email;
     }
 }

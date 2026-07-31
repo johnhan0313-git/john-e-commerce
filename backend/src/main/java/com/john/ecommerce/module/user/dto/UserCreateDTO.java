@@ -11,5 +11,4 @@ public class UserCreateDTO {
     @Email(message = "邮箱格式不正确")
     private String email;
     private String nickname;
-    private String password;
 }

@@ -1,22 +1,28 @@
 <template>
   <div class="login-wrap">
     <el-card class="login-card">
-      <h2>卖家登录</h2>
+      <h2>卖家登录 / 注册</h2>
+      <p class="sub">邮箱验证码登录，未注册将自动开通账号（无需密码）；入驻审核请登录后提交资料</p>
       <el-form label-position="top" @submit.prevent="onSubmit">
-        <el-form-item label="邮箱">
-          <el-input v-model="email" placeholder="seller@example.com" />
+        <el-form-item label="邮箱" required>
+          <el-input v-model="email" type="email" placeholder="seller@example.com" autocomplete="username" />
         </el-form-item>
-        <el-form-item label="验证码">
+        <el-form-item label="验证码" required>
           <div class="code-row">
-            <el-input v-model="code" placeholder="6 位验证码" />
-            <el-button :disabled="cooldown > 0 || sending" @click="sendCode">
+            <el-input
+              v-model="code"
+              placeholder="6 位验证码"
+              maxlength="6"
+              autocomplete="one-time-code"
+            />
+            <el-button :disabled="cooldown > 0 || sending || !email.trim()" @click="sendCode">
               {{ cooldown > 0 ? `${cooldown}s` : '获取验证码' }}
             </el-button>
           </div>
         </el-form-item>
         <el-alert v-if="err" :title="err" type="error" show-icon :closable="false" class="mb" />
         <el-button type="primary" native-type="submit" :loading="loading" style="width: 100%">
-          登录
+          登录 / 注册
         </el-button>
         <p class="hint">本地开发可用固定码 123456（app.auth.fixed-code）</p>
       </el-form>
@@ -45,6 +51,10 @@ const router = useRouter()
 
 async function sendCode() {
   err.value = ''
+  if (!email.value.trim()) {
+    err.value = '请先填写邮箱'
+    return
+  }
   sending.value = true
   try {
     await auth.sendCode(email.value.trim())
@@ -93,6 +103,7 @@ onUnmounted(() => {
   background: linear-gradient(160deg, #f0f4f8, #ffffff 45%, #eef2f7);
 }
 .login-card { width: min(100% - 32px, 400px); }
+.sub { margin: -8px 0 16px; font-size: 13px; color: #909399; line-height: 1.5; }
 .code-row { display: flex; gap: 8px; width: 100%; }
 .mb { margin-bottom: 16px; }
 .hint { margin: 12px 0 0; font-size: 12px; color: #909399; }

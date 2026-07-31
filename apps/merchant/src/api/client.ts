@@ -1,6 +1,8 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
+const tenantId = import.meta.env.VITE_TENANT_ID || '1'
+
 const client = axios.create({
   baseURL: '/api',
   timeout: 10000,
@@ -11,6 +13,7 @@ client.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  config.headers['X-Tenant-Id'] = tenantId
   return config
 })
 
