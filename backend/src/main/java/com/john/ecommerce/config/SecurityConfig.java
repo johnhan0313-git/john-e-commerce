@@ -30,8 +30,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Configuration
 @EnableWebSecurity
@@ -81,6 +84,19 @@ public class SecurityConfig {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
+    @SuppressWarnings("unchecked")
+    private static Set<String> parseIdentities(Object raw) {
+        Set<String> out = new LinkedHashSet<>();
+        if (raw instanceof Collection<?> col) {
+            for (Object item : col) {
+                if (item != null && !item.toString().isBlank()) {
+                    out.add(item.toString().trim());
+                }
+            }
+        }
+        return out;
+    }
+
     public class JwtAuthFilter extends OncePerRequestFilter {
         @Override
         protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -98,14 +114,21 @@ public class SecurityConfig {
                     Long userId = claims.get("userId", Long.class);
                     Long tenantId = claims.get("tenantId", Long.class);
                     String userType = claims.get("userType", String.class);
+                    Set<String> identities = parseIdentities(claims.get("identities"));
 
                     TenantContext.setTenantId(tenantId);
                     UserContext.setUserId(userId);
                     UserContext.setUserType(userType);
+                    UserContext.setIdentities(identities);
 
-                    List<SimpleGrantedAuthority> authorities = Collections.singletonList(
-                            new SimpleGrantedAuthority("ROLE_" + (userType != null ? userType.toUpperCase() : "USER"))
-                    );
+                    List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                    for (String identity : identities) {
+                        authorities.add(new SimpleGrantedAuthority("ROLE_" + identity.toUpperCase()));
+                    }
+                    if (authorities.isEmpty()) {
+                        authorities.add(new SimpleGrantedAuthority(
+                                "ROLE_" + (userType != null ? userType.toUpperCase() : "USER")));
+                    }
                     UsernamePasswordAuthenticationToken auth =
                             new UsernamePasswordAuthenticationToken(userId, null, authorities);
                     SecurityContextHolder.getContext().setAuthentication(auth);

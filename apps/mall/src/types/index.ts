@@ -18,6 +18,7 @@ export interface UserInfo {
   nickname?: string
   avatar?: string
   userType?: number
+  identities?: string[]
   status?: number
 }
 

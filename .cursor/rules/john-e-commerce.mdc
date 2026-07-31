@@ -17,7 +17,7 @@ alwaysApply: true
 
 | 路径 | 职责 | 状态 |
 |------|------|------|
-| `module/user` | 登录/用户/地址 | API 完成 |
+| `module/user` | 登录/用户/地址 + 多身份(t_user_identity: buyer/seller/ops) | API 完成 |
 | `module/product` | 品牌/类目/SPU/SKU/价格规则/购物车 | CRUD 完成 |
 | `module/trade` | 拆单/状态机/订单组/退款实体 | 下单主路径完成 |
 | `module/activity` | 营销活动 + PromoEngine | CRUD + preview |

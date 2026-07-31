@@ -114,10 +114,47 @@ public class TestDataSeeder {
                 CREATE UNIQUE INDEX IF NOT EXISTS uk_t_user_email
                 ON t_user (email) WHERE delete_flag = 0 AND email IS NOT NULL
                 """);
+        jdbcTemplate.execute("""
+                CREATE TABLE IF NOT EXISTS t_user_identity (
+                    id              BIGINT PRIMARY KEY,
+                    tenant_id       BIGINT NOT NULL,
+                    user_id         BIGINT NOT NULL,
+                    identity_code   VARCHAR(32) NOT NULL,
+                    status          SMALLINT NOT NULL DEFAULT 1,
+                    extra           JSONB NOT NULL DEFAULT '{}',
+                    delete_flag     SMALLINT NOT NULL DEFAULT 0,
+                    created_at      BIGINT NOT NULL,
+                    created_by      BIGINT,
+                    updated_at      BIGINT NOT NULL,
+                    updated_by      BIGINT,
+                    idempotent_key  VARCHAR(64)
+                )
+                """);
+        jdbcTemplate.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS uk_t_user_identity_user_code
+                ON t_user_identity (tenant_id, user_id, identity_code) WHERE delete_flag = 0
+                """);
         jdbcTemplate.update("""
                 UPDATE t_user SET email = 'johnhan0313@gmail.com', nickname = '平台管理员',
                   user_type = 1, status = 1, updated_at = 0
                 WHERE id = 1
+                """);
+        // Demo admin: buyer + ops（同一邮箱可兼多身份）
+        jdbcTemplate.update("""
+                INSERT INTO t_user_identity (id, tenant_id, user_id, identity_code, status, delete_flag, created_at, updated_at)
+                SELECT 11, 1, 1, 'buyer', 1, 0, 0, 0
+                WHERE EXISTS (SELECT 1 FROM t_user WHERE id = 1)
+                  AND NOT EXISTS (
+                    SELECT 1 FROM t_user_identity WHERE user_id = 1 AND identity_code = 'buyer' AND delete_flag = 0
+                  )
+                """);
+        jdbcTemplate.update("""
+                INSERT INTO t_user_identity (id, tenant_id, user_id, identity_code, status, delete_flag, created_at, updated_at)
+                SELECT 12, 1, 1, 'ops', 1, 0, 0, 0
+                WHERE EXISTS (SELECT 1 FROM t_user WHERE id = 1)
+                  AND NOT EXISTS (
+                    SELECT 1 FROM t_user_identity WHERE user_id = 1 AND identity_code = 'ops' AND delete_flag = 0
+                  )
                 """);
     }
 

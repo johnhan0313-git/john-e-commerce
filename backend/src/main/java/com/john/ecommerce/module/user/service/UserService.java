@@ -6,6 +6,7 @@ import com.john.ecommerce.common.context.TenantContext;
 import com.john.ecommerce.common.exception.BizException;
 import com.john.ecommerce.module.user.dto.*;
 import com.john.ecommerce.module.user.entity.User;
+import com.john.ecommerce.module.user.identity.IdentityCodes;
 import com.john.ecommerce.module.user.mapper.UserMapper;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -16,15 +17,19 @@ import org.springframework.util.StringUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
     private static final String PORTAL_ADMIN = "admin";
+    private static final String PORTAL_MERCHANT = "merchant";
+    private static final String PORTAL_MALL = "mall";
 
     private final UserMapper userMapper;
     private final EmailCodeService emailCodeService;
+    private final UserIdentityService userIdentityService;
 
     @Value("${app.jwt.secret:john-ecommerce-dev-jwt-secret-change-me-32b+}")
     private String jwtSecret;
@@ -44,48 +49,55 @@ public class UserService {
         if (user != null && user.getStatus() != null && user.getStatus() != 1) {
             throw new BizException("账号已被禁用");
         }
-        // 管理后台仅允许已有账号发码；买家/卖家未注册也可发码，登录时自动开通
-        if (isAdminPortal(dto.getPortal()) && user == null) {
-            throw new BizException("该邮箱未注册");
+        if (isAdminPortal(dto.getPortal())) {
+            if (user == null || !userIdentityService.has(user.getId(), IdentityCodes.OPS)) {
+                throw new BizException(user == null ? "该邮箱未注册" : "无管理后台权限");
+            }
         }
         emailCodeService.sendLoginCode(email);
     }
 
     public LoginVO login(LoginDTO dto, Long headerTenantId) {
         String email = EmailCodeService.normalize(dto.getEmail());
-        // 先校验不消费：JWT 签发失败时验证码仍可重试，避免误报「已过期」
         emailCodeService.verify(email, dto.getCode());
 
+        String portal = normalizePortal(dto.getPortal());
         User user = userMapper.selectByEmail(email);
         if (user == null) {
-            if (isAdminPortal(dto.getPortal())) {
+            if (PORTAL_ADMIN.equals(portal)) {
                 throw new BizException("该邮箱未注册");
             }
-            user = registerPasswordless(email, headerTenantId);
+            user = registerPasswordless(email, headerTenantId, portal);
         } else if (user.getStatus() != null && user.getStatus() != 1) {
             throw new BizException("账号已被禁用");
-        } else if (isAdminPortal(dto.getPortal()) && (user.getUserType() == null || user.getUserType() != 1)) {
+        } else {
+            ensurePortalIdentities(user, portal);
+        }
+
+        List<String> identities = userIdentityService.listActiveCodes(user.getId());
+        if (PORTAL_ADMIN.equals(portal) && !identities.contains(IdentityCodes.OPS)) {
             throw new BizException("无管理后台权限");
         }
 
-        String token = generateToken(user);
+        String token = generateToken(user, identities);
         emailCodeService.consume(email);
         LoginVO vo = new LoginVO();
         vo.setToken(token);
-        vo.setUser(toVO(user));
+        vo.setUser(toVO(user, identities));
         return vo;
     }
 
     /**
-     * 邮箱验证码通过后自动开通买家/卖家账号（无密码）。
+     * 邮箱验证码通过后自动开通账号，并按门户赋予身份。
      */
-    private User registerPasswordless(String email, Long headerTenantId) {
+    private User registerPasswordless(String email, Long headerTenantId, String portal) {
         Long tenantId = headerTenantId != null ? headerTenantId : defaultTenantId;
         Long prev = TenantContext.getTenantId();
         TenantContext.setTenantId(tenantId);
         try {
             User existing = userMapper.selectByEmail(email);
             if (existing != null) {
+                ensurePortalIdentities(existing, portal);
                 return existing;
             }
             User user = new User();
@@ -96,7 +108,33 @@ public class UserService {
             user.setStatus(1);
             user.setDeleteFlag(0);
             userMapper.insert(user);
+            ensurePortalIdentities(user, portal);
             return user;
+        } finally {
+            if (prev == null) {
+                TenantContext.clear();
+            } else {
+                TenantContext.setTenantId(prev);
+            }
+        }
+    }
+
+    /**
+     * mall → buyer；merchant → buyer+seller；admin 不自动赋权。
+     */
+    private void ensurePortalIdentities(User user, String portal) {
+        Long prev = TenantContext.getTenantId();
+        if (prev == null && user.getTenantId() != null) {
+            TenantContext.setTenantId(user.getTenantId());
+        }
+        try {
+            if (PORTAL_ADMIN.equals(portal)) {
+                return;
+            }
+            userIdentityService.ensureBuyer(user.getId());
+            if (PORTAL_MERCHANT.equals(portal)) {
+                userIdentityService.ensureSeller(user.getId());
+            }
         } finally {
             if (prev == null) {
                 TenantContext.clear();
@@ -133,6 +171,7 @@ public class UserService {
         user.setUserType(0);
         user.setStatus(1);
         userMapper.insert(user);
+        userIdentityService.ensureBuyer(user.getId());
         return toVO(user);
     }
 
@@ -155,6 +194,8 @@ public class UserService {
             user.setStatus(1);
             user.setDeleteFlag(0);
             userMapper.insert(user);
+            userIdentityService.ensureBuyer(user.getId());
+            userIdentityService.ensureOps(user.getId());
             return user;
         } finally {
             if (prev == null) {
@@ -182,17 +223,18 @@ public class UserService {
         return result;
     }
 
-    private String generateToken(User user) {
+    private String generateToken(User user, List<String> identities) {
         byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
-        // HS256 要求密钥 ≥ 256 bit；过短会在校验验证码之后才抛 WeakKeyException
         if (keyBytes.length < 32) {
             throw new BizException(503, "服务端 JWT 密钥配置过短，请将 JWT_SECRET 设为至少 32 字节");
         }
+        boolean ops = identities != null && identities.contains(IdentityCodes.OPS);
         return Jwts.builder()
                 .subject(String.valueOf(user.getId()))
                 .claim("userId", user.getId())
                 .claim("tenantId", user.getTenantId())
-                .claim("userType", String.valueOf(user.getUserType()))
+                .claim("userType", ops ? "1" : "0")
+                .claim("identities", identities != null ? identities : List.of())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpireMs))
                 .signWith(Keys.hmacShaKeyFor(keyBytes))
@@ -200,20 +242,33 @@ public class UserService {
     }
 
     private UserVO toVO(User u) {
+        return toVO(u, userIdentityService.listActiveCodes(u.getId()));
+    }
+
+    private UserVO toVO(User u, List<String> identities) {
         UserVO vo = new UserVO();
         vo.setId(u.getId());
         vo.setPhone(u.getPhone());
         vo.setEmail(u.getEmail());
         vo.setNickname(u.getNickname());
         vo.setAvatar(u.getAvatar());
-        vo.setUserType(u.getUserType());
+        boolean ops = identities != null && identities.contains(IdentityCodes.OPS);
+        vo.setUserType(ops ? 1 : 0);
+        vo.setIdentities(identities != null ? identities : List.of());
         vo.setStatus(u.getStatus());
         vo.setCreatedAt(u.getCreatedAt());
         return vo;
     }
 
     private static boolean isAdminPortal(String portal) {
-        return PORTAL_ADMIN.equalsIgnoreCase(portal);
+        return PORTAL_ADMIN.equals(normalizePortal(portal));
+    }
+
+    private static String normalizePortal(String portal) {
+        if (!StringUtils.hasText(portal)) {
+            return PORTAL_MALL;
+        }
+        return portal.trim().toLowerCase();
     }
 
     private static String nicknameFromEmail(String email) {

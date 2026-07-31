@@ -11,6 +11,7 @@ import com.john.ecommerce.module.merchant.dto.MerchantVO;
 import com.john.ecommerce.module.merchant.entity.Merchant;
 import com.john.ecommerce.module.merchant.entity.Shop;
 import com.john.ecommerce.module.merchant.mapper.MerchantMapper;
+import com.john.ecommerce.module.user.service.UserIdentityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ public class MerchantService {
 
     private final MerchantMapper merchantMapper;
     private final ShopService shopService;
+    private final UserIdentityService userIdentityService;
 
     public MerchantVO apply(MerchantApplyDTO dto) {
         Long userId = UserContext.getCurrentUserId();
@@ -42,6 +44,7 @@ public class MerchantService {
         merchant.setCommissionRate(dto.getCommissionRate() != null ? dto.getCommissionRate() : BigDecimal.ZERO);
         merchant.setStatus(0);
         merchantMapper.insert(merchant);
+        userIdentityService.ensureSeller(userId);
         return toVO(merchant);
     }
 
@@ -54,6 +57,7 @@ public class MerchantService {
             merchant.setSettledAt(System.currentTimeMillis());
             merchantMapper.updateById(merchant);
             shopService.createDefaultShop(merchant.getId(), merchant.getName(), merchant.getLogo());
+            userIdentityService.ensureSeller(merchant.getUserId());
         } else {
             merchant.setStatus(2);
             merchantMapper.updateById(merchant);

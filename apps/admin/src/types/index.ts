@@ -18,6 +18,7 @@ export interface LoginVO {
     phone: string
     nickname?: string
     userType?: number
+    identities?: string[]
   }
 }
 

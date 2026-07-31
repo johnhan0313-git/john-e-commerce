@@ -61,7 +61,8 @@ class AuthLoginIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.token").isNotEmpty())
                 .andExpect(jsonPath("$.data.user.email").value(email))
-                .andExpect(jsonPath("$.data.user.userType").value(0))
+                .andExpect(jsonPath("$.data.user.identities").isArray())
+                .andExpect(jsonPath("$.data.user.identities[0]").value("buyer"))
                 .andReturn();
 
         JsonNode root = objectMapper.readTree(result.getResponse().getContentAsString());

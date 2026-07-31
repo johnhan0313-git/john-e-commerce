@@ -31,7 +31,8 @@ public final class SqlScriptLoader {
             "V014__order_cancel_by.sql",
             "V015__email_login_admin.sql",
             "V016__prod_bootstrap.sql",
-            "V017__init_shop.sql"
+            "V017__init_shop.sql",
+            "V018__init_user_identity.sql"
     );
 
     private SqlScriptLoader() {}
