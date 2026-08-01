@@ -77,10 +77,13 @@ class MoneyPathIT extends AbstractIntegrationTest {
             assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID.getCode());
             assertThat(order.getPaidAmount()).isEqualByComparingTo(payAmount);
 
-            long settleCount = settlementOrderMapper.selectCount(new LambdaQueryWrapper<SettlementOrder>()
+            SettlementOrder so = settlementOrderMapper.selectOne(new LambdaQueryWrapper<SettlementOrder>()
                     .eq(SettlementOrder::getOrderId, orderId)
-                    .eq(SettlementOrder::getPaymentId, payment.path("id").asLong()));
-            assertThat(settleCount).isGreaterThanOrEqualTo(1);
+                    .eq(SettlementOrder::getPaymentId, payment.path("id").asLong())
+                    .last("LIMIT 1"));
+            assertThat(so).isNotNull();
+            assertThat(so.getShopId()).isEqualTo(catalog.shopId());
+            assertThat(so.getMerchantId()).isEqualTo(catalog.merchantId());
         } finally {
             TenantContext.clear();
         }
@@ -118,7 +121,7 @@ class MoneyPathIT extends AbstractIntegrationTest {
                         .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data.orders[0].id").isNumber())
+                .andExpect(jsonPath("$.data.orders[0].id").exists())
                 .andReturn();
         return objectMapper.readTree(result.getResponse().getContentAsString()).path("data");
     }

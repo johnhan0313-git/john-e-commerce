@@ -30,6 +30,8 @@ export interface Spu {
   detail?: string
   categoryId?: number
   brandId?: number
+  merchantId?: number
+  shopId?: number
   productCode?: string
   status?: number
   sales?: number
@@ -51,6 +53,8 @@ export interface Order {
   id: number
   orderNo?: string
   orderGroupNo?: string
+  merchantId?: number
+  shopId?: number
   status?: number
   statusLabel?: string
   payStatus?: number

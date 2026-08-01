@@ -322,6 +322,7 @@ CREATE TABLE t_settlement_order (
     payment_id      BIGINT,
     order_id        BIGINT,
     merchant_id     BIGINT,
+    shop_id         BIGINT,
     amount          BIGINT NOT NULL,
     currency        VARCHAR(10) NOT NULL DEFAULT 'CNY',
     bill_status     SMALLINT NOT NULL DEFAULT 0,
@@ -340,6 +341,7 @@ CREATE INDEX idx_t_settlement_order_tenant ON t_settlement_order (tenant_id);
 CREATE INDEX idx_t_settlement_order_payment ON t_settlement_order (tenant_id, payment_id);
 CREATE INDEX idx_t_settlement_order_order ON t_settlement_order (tenant_id, order_id);
 CREATE INDEX idx_t_settlement_order_merchant ON t_settlement_order (tenant_id, merchant_id);
+CREATE INDEX idx_t_settlement_order_shop ON t_settlement_order (tenant_id, shop_id);
 CREATE INDEX idx_t_settlement_order_bill_status ON t_settlement_order (tenant_id, bill_status);
 
 COMMENT ON TABLE t_settlement_order IS 'Forward/reverse settlement order (signed cents)';
@@ -373,6 +375,7 @@ CREATE TABLE t_settlement_bill (
     tenant_id           BIGINT NOT NULL,
     bill_no             VARCHAR(64) NOT NULL,
     merchant_id         BIGINT,
+    shop_id             BIGINT,
     payee_type          VARCHAR(20),
     payee_id            BIGINT,
     period_start        BIGINT,
@@ -393,6 +396,7 @@ CREATE TABLE t_settlement_bill (
 CREATE UNIQUE INDEX uk_t_settlement_bill_no ON t_settlement_bill (tenant_id, bill_no) WHERE delete_flag = 0;
 CREATE INDEX idx_t_settlement_bill_tenant ON t_settlement_bill (tenant_id);
 CREATE INDEX idx_t_settlement_bill_merchant ON t_settlement_bill (tenant_id, merchant_id);
+CREATE INDEX idx_t_settlement_bill_shop ON t_settlement_bill (tenant_id, shop_id);
 
 COMMENT ON TABLE t_settlement_bill IS 'Settlement bill (pool of booked settlement orders)';
 
@@ -442,6 +446,7 @@ CREATE TABLE t_settlement (
     settle_no           VARCHAR(64) NOT NULL,
     settlement_bill_id  BIGINT,
     merchant_id         BIGINT,
+    shop_id             BIGINT,
     net_amount          BIGINT NOT NULL,
     currency            VARCHAR(10) NOT NULL DEFAULT 'CNY',
     status              SMALLINT NOT NULL DEFAULT 0,
@@ -458,6 +463,7 @@ CREATE UNIQUE INDEX uk_t_settlement_no ON t_settlement (tenant_id, settle_no) WH
 CREATE INDEX idx_t_settlement_tenant ON t_settlement (tenant_id);
 CREATE INDEX idx_t_settlement_bill ON t_settlement (tenant_id, settlement_bill_id);
 CREATE INDEX idx_t_settlement_merchant ON t_settlement (tenant_id, merchant_id);
+CREATE INDEX idx_t_settlement_shop ON t_settlement (tenant_id, shop_id);
 
 COMMENT ON TABLE t_settlement IS 'Netted settlement document after bill pooling';
 

@@ -20,7 +20,8 @@ public class SettlementOrderController {
     @GetMapping
     public R<Page<SettlementOrder>> list(@RequestParam(defaultValue = "1") int page,
                                         @RequestParam(defaultValue = "20") int size,
+                                        @RequestParam(required = false) Long shopId,
                                         @RequestParam(required = false) Long merchantId) {
-        return R.ok(settlementBillService.listOrders(page, size, merchantId));
+        return R.ok(settlementBillService.listOrders(page, size, shopId, merchantId));
     }
 }

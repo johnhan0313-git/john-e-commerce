@@ -8,19 +8,26 @@ import com.john.ecommerce.module.merchant.dto.MerchantApplyDTO;
 import com.john.ecommerce.module.merchant.dto.MerchantAuditDTO;
 import com.john.ecommerce.module.merchant.dto.MerchantMeVO;
 import com.john.ecommerce.module.merchant.dto.MerchantVO;
+import com.john.ecommerce.module.merchant.dto.ShopVO;
 import com.john.ecommerce.module.merchant.entity.Merchant;
 import com.john.ecommerce.module.merchant.entity.Shop;
 import com.john.ecommerce.module.merchant.mapper.MerchantMapper;
 import com.john.ecommerce.module.user.service.UserIdentityService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class MerchantService {
+
+    public static final String HEADER_SHOP_ID = "X-Shop-Id";
 
     private final MerchantMapper merchantMapper;
     private final ShopService shopService;
@@ -75,9 +82,11 @@ public class MerchantService {
         }
         MerchantMeVO vo = new MerchantMeVO();
         vo.setMerchant(toVO(merchant));
-        Shop shop = shopService.findDefaultByMerchantId(merchant.getId());
-        if (shop != null) {
-            vo.setShop(shopService.toVO(shop));
+        List<ShopVO> shops = shopService.listByMerchant(merchant.getId());
+        vo.setShops(shops);
+        Shop current = resolveCurrentShop(merchant, false);
+        if (current != null) {
+            vo.setCurrentShop(shopService.toVO(current));
         }
         return vo;
     }
@@ -100,9 +109,37 @@ public class MerchantService {
 
     public Shop requireCurrentShop() {
         Merchant merchant = requireApproved();
-        Shop shop = shopService.findDefaultByMerchantId(merchant.getId());
+        Shop shop = resolveCurrentShop(merchant, true);
         if (shop == null) throw new BizException("店铺不存在");
         return shop;
+    }
+
+    private Shop resolveCurrentShop(Merchant merchant, boolean requireOpen) {
+        Long headerShopId = readShopIdHeader();
+        if (headerShopId != null) {
+            if (requireOpen) {
+                return shopService.requireOwnedOpen(headerShopId, merchant.getId());
+            }
+            return shopService.requireOwned(headerShopId, merchant.getId());
+        }
+        Shop fallback = shopService.findDefaultByMerchantId(merchant.getId());
+        if (fallback == null && requireOpen) {
+            throw new BizException("暂无营业中的店铺");
+        }
+        return fallback;
+    }
+
+    private Long readShopIdHeader() {
+        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attrs == null) return null;
+        HttpServletRequest request = attrs.getRequest();
+        String raw = request.getHeader(HEADER_SHOP_ID);
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            return Long.parseLong(raw.trim());
+        } catch (NumberFormatException e) {
+            throw new BizException("无效的店铺 ID");
+        }
     }
 
     public MerchantVO getById(Long id) {

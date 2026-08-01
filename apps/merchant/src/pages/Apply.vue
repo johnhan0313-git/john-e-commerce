@@ -3,7 +3,7 @@
     <div class="page-header">
       <div>
         <h2>入驻 / 店铺</h2>
-        <p class="desc">提交资料 · 等待运营审核 · 自动开店</p>
+        <p class="desc">入驻审核通过后自动开首店；可继续申请更多店铺</p>
       </div>
     </div>
 
@@ -11,26 +11,61 @@
       <div class="panel-body">加载中…</div>
     </div>
 
-    <div v-else-if="me?.merchant?.status === 1 && me.shop" class="panel result-panel success">
-      <el-result icon="success" title="已开店" :sub-title="`店铺：${me.shop.name}`">
-        <template #extra>
-          <el-button type="primary" @click="$router.push('/products')">管理商品</el-button>
-          <el-button @click="$router.push('/dashboard')">返回概览</el-button>
-        </template>
-      </el-result>
-    </div>
+    <template v-else-if="me?.merchant?.status === 1">
+      <div class="panel mb">
+        <div class="panel-pad">
+          <h3 class="section-title">我的店铺</h3>
+        </div>
+        <el-table :data="me.shops || []" empty-text="暂无店铺">
+          <el-table-column prop="id" label="ID" width="90" />
+          <el-table-column prop="name" label="店名" min-width="160" />
+          <el-table-column label="状态" width="120">
+            <template #default="{ row }">
+              <el-tag size="small" effect="light" :type="shopTagType(row.status)">
+                {{ row.statusLabel || row.status }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="120">
+            <template #default="{ row }">
+              <el-button
+                v-if="row.status === 1"
+                link
+                type="primary"
+                @click="switchShop(row.id)"
+              >
+                进入
+              </el-button>
+              <span v-else class="muted">—</span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <div class="panel form-panel">
+        <div class="panel-body">
+          <h3 class="section-title">申请新店</h3>
+          <el-form label-position="top" class="apply-form">
+            <el-form-item label="店铺名称" required>
+              <el-input v-model="shopForm.name" placeholder="新店名称" size="large" />
+            </el-form-item>
+            <el-form-item label="Logo URL">
+              <el-input v-model="shopForm.logo" size="large" />
+            </el-form-item>
+            <el-button type="primary" size="large" :loading="savingShop" @click="applyShop">
+              提交开店申请
+            </el-button>
+          </el-form>
+        </div>
+      </div>
+    </template>
 
     <div v-else-if="me?.merchant?.status === 0" class="panel result-panel pending">
-      <el-result icon="info" title="审核中" sub-title="运营审核通过后将自动创建店铺">
+      <el-result icon="info" title="审核中" sub-title="运营审核通过后将自动创建首店">
         <template #extra>
           <el-button @click="$router.push('/dashboard')">返回概览</el-button>
         </template>
       </el-result>
-      <div class="steps">
-        <div class="step done">提交资料</div>
-        <div class="step active">运营审核</div>
-        <div class="step">开店就绪</div>
-      </div>
     </div>
 
     <div v-else-if="me?.merchant?.status === 2" class="panel result-panel fail">
@@ -71,14 +106,17 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import client from '@/api/client'
 import { useMerchantStore } from '@/stores/merchant'
 
+const router = useRouter()
 const merchant = useMerchantStore()
 const me = computed(() => merchant.me)
 const loaded = computed(() => merchant.loaded)
 const saving = ref(false)
+const savingShop = ref(false)
 const form = reactive({
   name: '',
   logo: '',
@@ -86,6 +124,22 @@ const form = reactive({
   contactPhone: '',
   licenseNo: '',
 })
+const shopForm = reactive({
+  name: '',
+  logo: '',
+})
+
+function shopTagType(status?: number) {
+  if (status === 1) return 'success'
+  if (status === 2) return 'danger'
+  if (status === 0) return 'warning'
+  return 'info'
+}
+
+function switchShop(id: number) {
+  merchant.setActiveShop(id)
+  router.push('/products')
+}
 
 async function submit() {
   if (!form.name.trim() || !form.contactName.trim() || !form.contactPhone.trim()) {
@@ -108,12 +162,36 @@ async function submit() {
   }
 }
 
+async function applyShop() {
+  if (!shopForm.name.trim()) {
+    ElMessage.warning('请填写店铺名称')
+    return
+  }
+  savingShop.value = true
+  try {
+    await client.post('/shop/apply', {
+      name: shopForm.name.trim(),
+      logo: shopForm.logo || undefined,
+    })
+    ElMessage.success('开店申请已提交')
+    shopForm.name = ''
+    shopForm.logo = ''
+    await merchant.fetchMe()
+  } finally {
+    savingShop.value = false
+  }
+}
+
 onMounted(() => {
   if (!merchant.loaded) merchant.fetchMe()
 })
 </script>
 
 <style scoped>
+.mb {
+  margin-bottom: 16px;
+}
+
 .form-panel {
   max-width: 560px;
 }
@@ -134,12 +212,6 @@ onMounted(() => {
   }
 }
 
-.result-panel.success {
-  background:
-    linear-gradient(180deg, rgba(16, 185, 129, 0.06), transparent 40%),
-    var(--color-surface);
-}
-
 .result-panel.pending {
   background:
     linear-gradient(180deg, rgba(14, 165, 233, 0.06), transparent 40%),
@@ -152,33 +224,8 @@ onMounted(() => {
     var(--color-surface);
 }
 
-.steps {
-  display: flex;
-  gap: 8px;
-  padding: 0 32px 28px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.step {
-  font-size: 12px;
-  font-weight: 600;
+.muted {
   color: var(--color-muted);
-  background: #f1f5f9;
-  border: 1px solid var(--color-border);
-  border-radius: 99px;
-  padding: 6px 14px;
-}
-
-.step.done {
-  color: #0f766e;
-  background: #ccfbf1;
-  border-color: #99f6e4;
-}
-
-.step.active {
-  color: #0369a1;
-  background: #e0f2fe;
-  border-color: #bae6fd;
+  font-size: 13px;
 }
 </style>

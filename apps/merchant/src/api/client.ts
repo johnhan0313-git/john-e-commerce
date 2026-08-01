@@ -2,6 +2,7 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
 const tenantId = import.meta.env.VITE_TENANT_ID || '1'
+const ACTIVE_SHOP_KEY = 'merchant_active_shop_id'
 
 const client = axios.create({
   baseURL: '/api',
@@ -14,6 +15,10 @@ client.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`
   }
   config.headers['X-Tenant-Id'] = tenantId
+  const shopId = localStorage.getItem(ACTIVE_SHOP_KEY)
+  if (shopId) {
+    config.headers['X-Shop-Id'] = shopId
+  }
   return config
 })
 

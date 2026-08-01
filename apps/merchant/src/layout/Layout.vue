@@ -31,8 +31,26 @@
       <el-header class="header" height="56px">
         <div class="header-left">
           <span class="crumb">卖家管理端</span>
+          <el-select
+            v-if="openShops.length"
+            :model-value="activeShopId ?? undefined"
+            placeholder="选择店铺"
+            size="small"
+            style="width: 180px; margin-left: 12px"
+            @change="onShopChange"
+          >
+            <el-option
+              v-for="s in openShops"
+              :key="s.id"
+              :label="s.name"
+              :value="s.id"
+            />
+          </el-select>
         </div>
         <div class="header-right">
+          <el-button v-if="merchantApproved" text type="primary" @click="$router.push('/apply')">
+            申请新店
+          </el-button>
           <span class="user-chip">{{ auth.email || '卖家账号' }}</span>
           <el-button text class="logout-btn" @click="logout">退出</el-button>
         </div>
@@ -60,11 +78,19 @@ const merchant = useMerchantStore()
 
 const active = computed(() => route.path)
 const approved = computed(() => merchant.isApproved())
+const merchantApproved = computed(() => merchant.me?.merchant?.status === 1)
+const openShops = computed(() => merchant.openShops)
+const activeShopId = computed(() => merchant.activeShopId)
 const asideWidth = '232px'
 
 onMounted(() => {
   if (auth.isLoggedIn && !merchant.loaded) merchant.fetchMe()
 })
+
+function onShopChange(id: number) {
+  merchant.setActiveShop(id)
+  router.go(0)
+}
 
 function logout() {
   auth.logout()
@@ -142,6 +168,11 @@ function logout() {
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--color-border);
   padding: 0 24px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
 }
 
 .crumb {

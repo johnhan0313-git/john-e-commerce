@@ -6,7 +6,11 @@ import com.john.ecommerce.common.module.RequiresModule;
 import com.john.ecommerce.common.result.R;
 import com.john.ecommerce.module.fulfillment.dto.LogisticsCreateDTO;
 import com.john.ecommerce.module.fulfillment.dto.LogisticsVO;
+import com.john.ecommerce.module.merchant.dto.ShopApplyDTO;
+import com.john.ecommerce.module.merchant.dto.ShopAuditDTO;
 import com.john.ecommerce.module.merchant.dto.ShopVO;
+import com.john.ecommerce.module.merchant.entity.Merchant;
+import com.john.ecommerce.module.merchant.service.MerchantService;
 import com.john.ecommerce.module.merchant.service.ShopPortalService;
 import com.john.ecommerce.module.merchant.service.ShopService;
 import com.john.ecommerce.module.product.dto.SkuCreateDTO;
@@ -28,6 +32,7 @@ public class ShopController {
 
     private final ShopService shopService;
     private final ShopPortalService shopPortalService;
+    private final MerchantService merchantService;
 
     @GetMapping
     public R<Page<ShopVO>> list(@RequestParam(defaultValue = "1") int page,
@@ -35,6 +40,23 @@ public class ShopController {
                                 @RequestParam(required = false) Long merchantId,
                                 @RequestParam(required = false) Integer status) {
         return R.ok(shopService.list(page, size, merchantId, status));
+    }
+
+    @GetMapping("/mine")
+    public R<List<ShopVO>> mine() {
+        Merchant merchant = merchantService.requireApproved();
+        return R.ok(shopService.listByMerchant(merchant.getId()));
+    }
+
+    @PostMapping("/apply")
+    public R<ShopVO> apply(@Valid @RequestBody ShopApplyDTO dto) {
+        Merchant merchant = merchantService.requireApproved();
+        return R.ok(shopService.apply(merchant, dto));
+    }
+
+    @PutMapping("/{id:\\d+}/audit")
+    public R<ShopVO> audit(@PathVariable Long id, @RequestBody ShopAuditDTO dto) {
+        return R.ok(shopService.audit(id, dto));
     }
 
     @GetMapping("/{id:\\d+}")

@@ -19,6 +19,7 @@ public class SettlementOrder extends BaseEntity {
     private Long paymentId;
     private Long orderId;
     private Long merchantId;
+    private Long shopId;
     private Long amount;
     private String currency;
     private Integer billStatus;

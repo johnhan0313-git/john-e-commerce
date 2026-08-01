@@ -11,6 +11,7 @@ import lombok.EqualsAndHashCode;
 public class SettlementBill extends BaseEntity {
     private String billNo;
     private Long merchantId;
+    private Long shopId;
     private String payeeType;
     private Long payeeId;
     private Long periodStart;

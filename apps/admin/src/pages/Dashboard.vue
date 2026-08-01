@@ -41,7 +41,7 @@
           <el-empty v-if="!statusRows.length" description="暂无数据" :image-size="56" />
           <div v-else class="bar-list">
             <div v-for="row in statusRows" :key="row.status" class="bar-row">
-              <span class="name" :title="String(row.status)">{{ row.status }}</span>
+              <span class="name" :title="row.label">{{ row.label }}</span>
               <div class="bar-track">
                 <div class="bar-fill" :style="{ width: barWidth(row.count) }" />
               </div>
@@ -70,6 +70,18 @@ import { computed, onMounted, ref } from 'vue'
 import client from '@/api/client'
 import type { R, StatsOverview } from '@/types'
 
+const ORDER_STATUS_LABEL: Record<string, string> = {
+  '0': '待支付',
+  '1': '已支付',
+  '2': '已发货',
+  '3': '已送达',
+  '4': '已完成',
+  '5': '已取消',
+  '6': '退款中',
+  '7': '已退款',
+  '8': '部分发货',
+}
+
 const stats = ref<StatsOverview | null>(null)
 const loading = ref(false)
 const error = ref('')
@@ -77,6 +89,7 @@ const error = ref('')
 const statusRows = computed(() =>
   Object.entries(stats.value?.orderCountByStatus || {}).map(([status, count]) => ({
     status,
+    label: ORDER_STATUS_LABEL[status] || `状态 ${status}`,
     count,
   }))
 )

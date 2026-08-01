@@ -3,15 +3,22 @@
     <div class="page-header">
       <div>
         <h2>商品管理</h2>
-        <p class="desc">全域 SPU / SKU，可按店铺筛选</p>
+        <p class="desc">全域 SPU / SKU，可按卖家、店铺筛选</p>
       </div>
       <div class="page-header-actions">
+        <el-input
+          v-model="merchantIdFilter"
+          placeholder="卖家 ID"
+          clearable
+          style="width: 140px"
+          @change="onFilterChange"
+        />
         <el-input
           v-model="shopIdFilter"
           placeholder="店铺 ID"
           clearable
           style="width: 140px"
-          @change="load"
+          @change="onFilterChange"
         />
         <el-button type="primary" @click="openCreate">创建 SPU</el-button>
       </div>
@@ -21,6 +28,8 @@
       <el-table v-loading="loading" :data="list">
         <el-table-column prop="id" label="ID" width="90" />
         <el-table-column prop="name" label="名称" min-width="160" />
+        <el-table-column prop="merchantId" label="卖家" width="90" />
+        <el-table-column prop="shopId" label="店铺" width="90" />
         <el-table-column prop="subtitle" label="副标题" min-width="140" />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
@@ -120,6 +129,7 @@ const loading = ref(false)
 const page = ref(1)
 const size = 20
 const total = ref(0)
+const merchantIdFilter = ref('')
 const shopIdFilter = ref('')
 
 const createVisible = ref(false)
@@ -142,6 +152,11 @@ const skuForm = reactive({
   price: 99,
 })
 
+function onFilterChange() {
+  page.value = 1
+  load()
+}
+
 async function load() {
   loading.value = true
   try {
@@ -149,6 +164,7 @@ async function load() {
       params: {
         page: page.value,
         size,
+        merchantId: merchantIdFilter.value.trim() ? Number(merchantIdFilter.value) : undefined,
         shopId: shopIdFilter.value.trim() ? Number(shopIdFilter.value) : undefined,
       },
     }) as R<PageResult<Spu>>

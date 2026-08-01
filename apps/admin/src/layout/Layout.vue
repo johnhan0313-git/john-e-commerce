@@ -29,6 +29,10 @@
           <el-icon><List /></el-icon>
           <span>订单</span>
         </el-menu-item>
+        <el-menu-item v-if="modules.isEnabled('settle')" index="/settlements">
+          <el-icon><Wallet /></el-icon>
+          <span>结算</span>
+        </el-menu-item>
         <el-menu-item index="/tenant/modules">
           <el-icon><SetUp /></el-icon>
           <span>模块配置</span>
@@ -57,7 +61,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Goods, List, Odometer, SetUp, Shop, UserFilled } from '@element-plus/icons-vue'
+import { Goods, List, Odometer, SetUp, Shop, UserFilled, Wallet } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { useModulesStore } from '@/stores/modules'
 

@@ -3,15 +3,22 @@
     <div class="page-header">
       <div>
         <h2>订单管理</h2>
-        <p class="desc">全域订单查询与状态维护</p>
+        <p class="desc">全域订单查询与状态维护，可按卖家、店铺筛选</p>
       </div>
       <div class="page-header-actions">
+        <el-input
+          v-model="merchantIdFilter"
+          placeholder="卖家 ID"
+          clearable
+          style="width: 140px"
+          @change="onFilterChange"
+        />
         <el-input
           v-model="shopIdFilter"
           placeholder="店铺 ID"
           clearable
           style="width: 140px"
-          @change="load"
+          @change="onFilterChange"
         />
       </div>
     </div>
@@ -20,6 +27,8 @@
       <el-table v-loading="loading" :data="list">
         <el-table-column prop="id" label="ID" width="90" />
         <el-table-column prop="orderNo" label="订单号" min-width="160" />
+        <el-table-column prop="merchantId" label="卖家" width="90" />
+        <el-table-column prop="shopId" label="店铺" width="90" />
         <el-table-column label="状态" width="120">
           <template #default="{ row }">
             <el-tag size="small" effect="light">{{ row.statusLabel || row.status }}</el-tag>
@@ -96,6 +105,7 @@ const loading = ref(false)
 const page = ref(1)
 const size = 20
 const total = ref(0)
+const merchantIdFilter = ref('')
 const shopIdFilter = ref('')
 const detailVisible = ref(false)
 const detail = ref<Order | null>(null)
@@ -108,6 +118,11 @@ function payTagType(label: unknown) {
   return 'info'
 }
 
+function onFilterChange() {
+  page.value = 1
+  load()
+}
+
 async function load() {
   loading.value = true
   try {
@@ -116,6 +131,7 @@ async function load() {
         page: page.value,
         size,
         buyerScoped: false,
+        merchantId: merchantIdFilter.value.trim() ? Number(merchantIdFilter.value) : undefined,
         shopId: shopIdFilter.value.trim() ? Number(shopIdFilter.value) : undefined,
       },
     }) as R<PageResult<Order>>

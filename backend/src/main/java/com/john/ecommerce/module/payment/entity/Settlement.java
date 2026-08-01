@@ -12,6 +12,7 @@ public class Settlement extends BaseEntity {
     private String settleNo;
     private Long settlementBillId;
     private Long merchantId;
+    private Long shopId;
     private Long netAmount;
     private String currency;
     private Integer status;

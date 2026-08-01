@@ -56,7 +56,15 @@ public class TestDataSeeder {
     private final PayRouteRuleMapper payRouteRuleMapper;
     private final JdbcTemplate jdbcTemplate;
 
-    public record Catalog(Long warehouseId, Long spuId, Long skuId, BigDecimal price, int stockQty) {}
+    public record Catalog(
+            Long warehouseId,
+            Long spuId,
+            Long skuId,
+            BigDecimal price,
+            int stockQty,
+            Long shopId,
+            Long merchantId
+    ) {}
 
     public void ensureModulesEnabled(String... moduleCodes) {
         withTenant(() -> {
@@ -93,6 +101,9 @@ public class TestDataSeeder {
         jdbcTemplate.execute("ALTER TABLE t_spu ADD COLUMN IF NOT EXISTS shop_id BIGINT");
         jdbcTemplate.execute("ALTER TABLE t_order ADD COLUMN IF NOT EXISTS shop_id BIGINT");
         jdbcTemplate.execute("ALTER TABLE t_warehouse ADD COLUMN IF NOT EXISTS shop_id BIGINT");
+        jdbcTemplate.execute("ALTER TABLE t_settlement_order ADD COLUMN IF NOT EXISTS shop_id BIGINT");
+        jdbcTemplate.execute("ALTER TABLE t_settlement_bill ADD COLUMN IF NOT EXISTS shop_id BIGINT");
+        jdbcTemplate.execute("ALTER TABLE t_settlement ADD COLUMN IF NOT EXISTS shop_id BIGINT");
         jdbcTemplate.execute("""
                 CREATE TABLE IF NOT EXISTS t_shop (
                     id              BIGINT PRIMARY KEY,
@@ -100,7 +111,7 @@ public class TestDataSeeder {
                     merchant_id     BIGINT NOT NULL,
                     name            VARCHAR(100) NOT NULL,
                     logo            VARCHAR(500),
-                    status          SMALLINT NOT NULL DEFAULT 1,
+                    status          SMALLINT NOT NULL DEFAULT 0,
                     extra           JSONB NOT NULL DEFAULT '{}',
                     delete_flag     SMALLINT NOT NULL DEFAULT 0,
                     created_at      BIGINT NOT NULL,
@@ -276,8 +287,19 @@ public class TestDataSeeder {
         return withTenant(() -> {
             ensureDefaultWarehouse();
             long n = SEQ.incrementAndGet();
+            long merchantId = 900_000L + n;
+            long shopId = 910_000L + n;
+            long now = System.currentTimeMillis();
+            jdbcTemplate.update("""
+                    INSERT INTO t_shop
+                      (id, tenant_id, merchant_id, name, status, extra, delete_flag, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, 1, '{}'::jsonb, 0, ?, ?)
+                    ON CONFLICT (id) DO NOTHING
+                    """, shopId, TENANT_ID, merchantId, "测试店铺-" + n, now, now);
+
             Spu spu = new Spu();
-            spu.setMerchantId(0L);
+            spu.setMerchantId(merchantId);
+            spu.setShopId(shopId);
             spu.setProductCode("TEST-SPU-" + n);
             spu.setName("测试商品-" + n);
             spu.setProductType(0);
@@ -297,7 +319,6 @@ public class TestDataSeeder {
             sku.setDeleteFlag(0);
             skuMapper.insert(sku);
 
-            long now = System.currentTimeMillis();
             StockLot lot = new StockLot();
             lot.setWarehouseId(DEFAULT_WAREHOUSE_ID);
             lot.setSkuId(sku.getId());
@@ -331,7 +352,7 @@ public class TestDataSeeder {
                 warehouseStockMapper.updateById(ws);
             }
 
-            return new Catalog(DEFAULT_WAREHOUSE_ID, spu.getId(), sku.getId(), price, qty);
+            return new Catalog(DEFAULT_WAREHOUSE_ID, spu.getId(), sku.getId(), price, qty, shopId, merchantId);
         });
     }
 

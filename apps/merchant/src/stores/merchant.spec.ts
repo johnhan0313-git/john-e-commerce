@@ -13,20 +13,23 @@ import client from '@/api/client'
 describe('merchant store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    localStorage.clear()
     vi.mocked(client.get).mockReset()
   })
 
-  it('isApproved requires merchant status 1 and shop', async () => {
+  it('isApproved requires merchant status 1 and an open shop', async () => {
     const store = useMerchantStore()
     vi.mocked(client.get).mockResolvedValue({
       code: 200,
       data: {
         merchant: { id: 1, userId: 1, name: 'A', status: 1 },
-        shop: { id: 2, merchantId: 1, name: 'Shop', status: 1 },
+        shops: [{ id: 2, merchantId: 1, name: 'Shop', status: 1 }],
+        currentShop: { id: 2, merchantId: 1, name: 'Shop', status: 1 },
       },
     })
     await store.fetchMe()
     expect(store.isApproved()).toBe(true)
+    expect(store.activeShopId).toBe(2)
   })
 
   it('pending merchant is not approved', async () => {
@@ -35,7 +38,8 @@ describe('merchant store', () => {
       code: 200,
       data: {
         merchant: { id: 1, userId: 1, name: 'A', status: 0 },
-        shop: null,
+        shops: [],
+        currentShop: null,
       },
     })
     await store.fetchMe()

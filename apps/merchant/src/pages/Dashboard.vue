@@ -24,9 +24,9 @@
           <div class="hint">审核结果</div>
         </div>
         <div class="stat-card">
-          <div class="label">店铺</div>
-          <div class="value name">{{ me.shop?.name || '尚未开店' }}</div>
-          <div class="hint">{{ me.shop?.statusLabel || '提交入驻后开通' }}</div>
+          <div class="label">当前店铺</div>
+          <div class="value name">{{ me.currentShop?.name || '尚未开店' }}</div>
+          <div class="hint">{{ me.currentShop?.statusLabel || `${(me.shops || []).length} 家店铺` }}</div>
         </div>
       </div>
 

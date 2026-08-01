@@ -21,13 +21,14 @@ public class SettlementBillController {
     @GetMapping
     public R<Page<SettlementBill>> list(@RequestParam(defaultValue = "1") int page,
                                        @RequestParam(defaultValue = "20") int size,
+                                       @RequestParam(required = false) Long shopId,
                                        @RequestParam(required = false) Long merchantId) {
-        return R.ok(settlementBillService.listBills(page, size, merchantId));
+        return R.ok(settlementBillService.listBills(page, size, shopId, merchantId));
     }
 
     @PostMapping
-    public R<SettlementBill> create(@RequestParam Long merchantId) {
-        return R.ok(settlementBillService.createBill(merchantId));
+    public R<SettlementBill> create(@RequestParam Long shopId) {
+        return R.ok(settlementBillService.createBill(shopId));
     }
 
     @PostMapping("/{id}/post")

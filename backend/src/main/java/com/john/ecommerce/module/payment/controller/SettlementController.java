@@ -20,14 +20,18 @@ public class SettlementController {
 
     @GetMapping("/order")
     public R<Page<SettlementOrderVO>> listOrders(@RequestParam(defaultValue = "1") int page,
-                                                  @RequestParam(defaultValue = "20") int size) {
-        return R.ok(settlementService.listOrders(page, size));
+                                                  @RequestParam(defaultValue = "20") int size,
+                                                  @RequestParam(required = false) Long shopId,
+                                                  @RequestParam(required = false) Long merchantId) {
+        return R.ok(settlementService.listOrders(page, size, shopId, merchantId));
     }
 
     @GetMapping("/bill")
     public R<Page<SettlementBillVO>> listBills(@RequestParam(defaultValue = "1") int page,
-                                               @RequestParam(defaultValue = "20") int size) {
-        return R.ok(settlementService.listBills(page, size));
+                                               @RequestParam(defaultValue = "20") int size,
+                                               @RequestParam(required = false) Long shopId,
+                                               @RequestParam(required = false) Long merchantId) {
+        return R.ok(settlementService.listBills(page, size, shopId, merchantId));
     }
 
     @PostMapping("/bill/{id}/settle")

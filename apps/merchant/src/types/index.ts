@@ -33,7 +33,8 @@ export interface Shop {
 
 export interface MerchantMe {
   merchant: Merchant
-  shop?: Shop | null
+  shops?: Shop[]
+  currentShop?: Shop | null
 }
 
 export interface Spu {
