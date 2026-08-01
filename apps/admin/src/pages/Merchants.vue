@@ -58,7 +58,7 @@ import client from '@/api/client'
 import type { PageResult, R } from '@/types'
 
 interface MerchantRow {
-  id: number
+  id: number | string
   name: string
   contactName?: string
   contactPhone?: string
@@ -98,10 +98,14 @@ async function load() {
   }
 }
 
-async function audit(id: number, approved: boolean) {
-  await client.put(`/merchant/${id}/audit`, { approved })
-  ElMessage.success(approved ? '已通过并创建默认店铺' : '已拒绝')
-  await load()
+async function audit(id: number | string, approved: boolean) {
+  try {
+    await client.put(`/merchant/${id}/audit`, { approved })
+    ElMessage.success(approved ? '已通过并创建默认店铺' : '已拒绝')
+    await load()
+  } catch {
+    /* axios interceptor already shows message */
+  }
 }
 
 onMounted(load)

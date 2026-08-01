@@ -47,8 +47,8 @@ const hasMore = ref(false)
 async function load(reset = false) {
   loading.value = true
   try {
-    const res = await client.get('/product', {
-      params: { page: page.value, size: 20, status: 1 },
+    const res = await client.get('/public/product', {
+      params: { page: page.value, size: 20 },
     }) as R<PageResult<Spu>>
     const records = res.data?.records || []
     total.value = res.data?.total || 0

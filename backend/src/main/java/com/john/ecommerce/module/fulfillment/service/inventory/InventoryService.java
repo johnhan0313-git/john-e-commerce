@@ -77,6 +77,24 @@ public class InventoryService implements InventoryFacade {
 
     @Override
     @Transactional
+    public void ensureStock(Long warehouseId, Long skuId, int minAvailable) {
+        if (warehouseId == null || skuId == null || minAvailable <= 0) return;
+        StockLot lot = ensureDefaultLot(warehouseId, skuId);
+        int before = lot.getAvailable() != null ? lot.getAvailable() : 0;
+        if (before >= minAvailable) {
+            updateSummary(warehouseId, skuId);
+            return;
+        }
+        int add = minAvailable - before;
+        lot.setAvailable(before + add);
+        stockLotMapper.updateById(lot);
+        writeLog(warehouseId, skuId, lot.getLotNo(), "IN", add, before, lot.getAvailable(),
+                "SKU_INIT", skuId, "ensureStock");
+        updateSummary(warehouseId, skuId);
+    }
+
+    @Override
+    @Transactional
     public void unlockForOrder(Order order) {
         List<StockLockDetail> details = stockLockDetailMapper.selectList(
                 new LambdaQueryWrapper<StockLockDetail>()

@@ -45,16 +45,16 @@ const total = computed(() =>
 )
 
 async function enrichPrices(list: CartItem[]) {
-  const map = new Map<number, number>()
+  const map = new Map<string, number>()
   await Promise.all(
-    [...new Set(list.map((i) => i.skuId))].map(async (skuId) => {
+    [...new Set(list.map((i) => String(i.skuId)))].map(async (skuId) => {
       try {
         const res = await client.get(`/sku/${skuId}`) as R<Sku>
         if (res.data?.price != null) map.set(skuId, Number(res.data.price))
       } catch { /* ignore */ }
     })
   )
-  return list.map((i) => ({ ...i, price: map.get(i.skuId) }))
+  return list.map((i) => ({ ...i, price: map.get(String(i.skuId)) }))
 }
 
 onMounted(async () => {
@@ -74,8 +74,12 @@ async function submit() {
     const res = await client.post('/order', {
       items: items.value.map((i) => ({ skuId: i.skuId, quantity: i.quantity })),
     }) as R<OrderGroup>
-    toast('下单成功', 'success')
     const group = res.data
+    if (!group?.orderGroupNo) {
+      toast('下单失败：未返回订单组', 'error')
+      return
+    }
+    toast('下单成功', 'success')
     router.replace({
       path: '/pay',
       query: {
@@ -89,6 +93,8 @@ async function submit() {
         })),
       },
     })
+  } catch {
+    /* interceptor already toasted */
   } finally {
     submitting.value = false
   }

@@ -2,6 +2,7 @@ package com.john.ecommerce.module.product.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.john.ecommerce.common.exception.BizException;
+import com.john.ecommerce.module.fulfillment.service.inventory.InventoryFacade;
 import com.john.ecommerce.module.product.dto.SkuCreateDTO;
 import com.john.ecommerce.module.product.dto.SkuVO;
 import com.john.ecommerce.module.product.entity.Sku;
@@ -17,8 +18,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SkuService {
 
+    /** 与 OrderSplitter 默认仓一致 */
+    private static final long DEFAULT_WAREHOUSE_ID = 0L;
+    private static final int DEFAULT_INIT_STOCK = 999;
+
     private final SkuMapper skuMapper;
     private final SpuMapper spuMapper;
+    private final InventoryFacade inventoryFacade;
 
     public SkuVO create(SkuCreateDTO dto) {
         requireSpu(dto.getSpuId());
@@ -29,11 +35,13 @@ public class SkuService {
         sku.setSpecValues(dto.getSpecValues());
         sku.setPrice(dto.getPrice());
         sku.setCostPrice(dto.getCostPrice());
-        sku.setLotEnabled(dto.getLotEnabled() != null ? dto.getLotEnabled() : false);
+        sku.setLotEnabled(toLotFlag(dto.getLotEnabled()));
         sku.setWeight(dto.getWeight());
         sku.setBarcode(dto.getBarcode());
         sku.setStatus(dto.getStatus() != null ? dto.getStatus() : 1);
         skuMapper.insert(sku);
+        // 新建 SKU 默认补可售库存，避免商城下单因空仓失败（正式环境应走入库单）
+        inventoryFacade.ensureStock(DEFAULT_WAREHOUSE_ID, sku.getId(), DEFAULT_INIT_STOCK);
         return toVO(sku);
     }
 
@@ -44,7 +52,7 @@ public class SkuService {
         if (dto.getSpecValues() != null) sku.setSpecValues(dto.getSpecValues());
         if (dto.getPrice() != null) sku.setPrice(dto.getPrice());
         if (dto.getCostPrice() != null) sku.setCostPrice(dto.getCostPrice());
-        if (dto.getLotEnabled() != null) sku.setLotEnabled(dto.getLotEnabled());
+        if (dto.getLotEnabled() != null) sku.setLotEnabled(toLotFlag(dto.getLotEnabled()));
         if (dto.getWeight() != null) sku.setWeight(dto.getWeight());
         if (dto.getBarcode() != null) sku.setBarcode(dto.getBarcode());
         if (dto.getStatus() != null) sku.setStatus(dto.getStatus());
@@ -89,11 +97,15 @@ public class SkuService {
         vo.setSpecValues(s.getSpecValues());
         vo.setPrice(s.getPrice());
         vo.setCostPrice(s.getCostPrice());
-        vo.setLotEnabled(s.getLotEnabled());
+        vo.setLotEnabled(s.getLotEnabled() != null && s.getLotEnabled() == 1);
         vo.setWeight(s.getWeight());
         vo.setBarcode(s.getBarcode());
         vo.setStatus(s.getStatus());
         vo.setCreatedAt(s.getCreatedAt());
         return vo;
+    }
+
+    private static int toLotFlag(Boolean lotEnabled) {
+        return Boolean.TRUE.equals(lotEnabled) ? 1 : 0;
     }
 }

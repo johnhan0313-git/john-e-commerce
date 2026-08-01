@@ -71,10 +71,11 @@ class MerchantPortalIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.status").value(0))
                 .andReturn();
-        long merchantId = objectMapper.readTree(applyRes.getResponse().getContentAsString())
-                .path("data").path("id").asLong();
+        JsonNode applyNode = objectMapper.readTree(applyRes.getResponse().getContentAsString()).path("data");
+        String merchantIdText = applyNode.path("id").asText();
+        assertThat(applyNode.path("id").asLong()).isPositive();
 
-        mockMvc.perform(put("/merchant/" + merchantId + "/audit")
+        mockMvc.perform(put("/merchant/" + merchantIdText + "/audit")
                         .header("Authorization", bearer)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"approved\":true}"))
@@ -86,10 +87,10 @@ class MerchantPortalIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.merchant.status").value(1))
-                .andExpect(jsonPath("$.data.shop.id").isNumber())
                 .andReturn();
-        long shopId = objectMapper.readTree(meRes.getResponse().getContentAsString())
-                .path("data").path("shop").path("id").asLong();
+        JsonNode meNode = objectMapper.readTree(meRes.getResponse().getContentAsString()).path("data");
+        String shopIdText = meNode.path("shop").path("id").asText();
+        assertThat(meNode.path("shop").path("id").asLong()).isPositive();
 
         String spuBody = """
                 {"name":"本店商品","merchantId":999999,"subtitle":"s"}
@@ -100,11 +101,11 @@ class MerchantPortalIT extends AbstractIntegrationTest {
                         .content(spuBody))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data.shopId").value(shopId))
-                .andExpect(jsonPath("$.data.merchantId").value(merchantId))
                 .andReturn();
-        long spuId = objectMapper.readTree(spuRes.getResponse().getContentAsString())
-                .path("data").path("id").asLong();
+        JsonNode spuNode = objectMapper.readTree(spuRes.getResponse().getContentAsString()).path("data");
+        assertThat(spuNode.path("shopId").asText()).isEqualTo(shopIdText);
+        assertThat(spuNode.path("merchantId").asText()).isEqualTo(merchantIdText);
+        long spuId = spuNode.path("id").asLong();
 
         mockMvc.perform(put("/shop/products/" + spuId + "/status")
                         .header("Authorization", bearer)
@@ -149,11 +150,11 @@ class MerchantPortalIT extends AbstractIntegrationTest {
                         .content(orderBody))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data.orders[0].shopId").value(shopId))
-                .andExpect(jsonPath("$.data.orders[0].merchantId").value(merchantId))
                 .andReturn();
         JsonNode orderNode = objectMapper.readTree(orderRes.getResponse().getContentAsString())
                 .path("data").path("orders").get(0);
+        assertThat(orderNode.path("shopId").asText()).isEqualTo(shopIdText);
+        assertThat(orderNode.path("merchantId").asText()).isEqualTo(merchantIdText);
         long orderId = orderNode.path("id").asLong();
         long orderItemId = orderNode.path("items").get(0).path("id").asLong();
 

@@ -20,7 +20,8 @@ public class Sku extends BaseEntity {
     private Map<String, String> specValues;
     private BigDecimal price;
     private BigDecimal costPrice;
-    private Boolean lotEnabled;
+    /** DB: SMALLINT 0/1（勿用 Boolean，PG 无法绑定 boolean → smallint） */
+    private Integer lotEnabled;
     private BigDecimal weight;
     private String barcode;
     private Integer status;

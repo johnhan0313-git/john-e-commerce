@@ -13,4 +13,11 @@ public interface InventoryFacade {
     void lockForOrder(Order order, List<OrderItem> items);
 
     void unlockForOrder(Order order);
+
+    /**
+     * 确保默认仓对该 SKU 至少有 minAvailable 可售库存（演示/新建 SKU 用）。
+     */
+    default void ensureStock(Long warehouseId, Long skuId, int minAvailable) {
+        // no-op
+    }
 }

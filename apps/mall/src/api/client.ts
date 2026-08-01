@@ -18,7 +18,15 @@ client.interceptors.request.use((config) => {
 })
 
 client.interceptors.response.use(
-  (res) => res.data,
+  (res) => {
+    const body = res.data
+    if (body && typeof body.code === 'number' && body.code !== 200) {
+      const message = body.message || '请求失败'
+      toast(message, 'error')
+      return Promise.reject(Object.assign(new Error(message), { response: res, businessCode: body.code }))
+    }
+    return body
+  },
   (err) => {
     const status = err.response?.status
     const message = err.response?.data?.message || err.message || '请求失败'
@@ -28,7 +36,7 @@ client.interceptors.response.use(
         const redirect = encodeURIComponent(location.pathname + location.search)
         window.location.href = `/login?redirect=${redirect}`
       }
-    } else {
+    } else if (!err.businessCode) {
       toast(message, 'error')
     }
     return Promise.reject(err)

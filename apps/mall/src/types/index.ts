@@ -28,20 +28,20 @@ export interface LoginVO {
 }
 
 export interface Spu {
-  id: number
+  id: number | string
   name: string
   subtitle?: string
   mainImages?: string[]
   detail?: string
-  categoryId?: number
-  brandId?: number
+  categoryId?: number | string
+  brandId?: number | string
   status?: number
   sales?: number
 }
 
 export interface Sku {
-  id: number
-  spuId: number
+  id: number | string
+  spuId: number | string
   skuCode?: string
   skuName?: string
   specValues?: Record<string, string>
@@ -51,10 +51,10 @@ export interface Sku {
 }
 
 export interface CartItem {
-  id: number
-  skuId: number
+  id: number | string
+  skuId: number | string
   skuName?: string
-  spuId?: number
+  spuId?: number | string
   spuName?: string
   quantity: number
   selected: number

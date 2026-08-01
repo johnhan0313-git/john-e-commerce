@@ -62,7 +62,7 @@ const auth = useAuthStore()
 
 const spu = ref<Spu | null>(null)
 const skus = ref<Sku[]>([])
-const selectedSkuId = ref<number | null>(null)
+const selectedSkuId = ref<number | string | null>(null)
 const quantity = ref(1)
 const loading = ref(true)
 const adding = ref(false)
@@ -75,11 +75,11 @@ onMounted(async () => {
   const id = route.params.id
   try {
     const [spuRes, skuRes] = await Promise.all([
-      client.get(`/product/${id}`) as Promise<R<Spu>>,
-      client.get('/sku', { params: { spuId: id } }) as Promise<R<Sku[]>>,
+      client.get(`/public/product/${id}`) as Promise<R<Spu>>,
+      client.get(`/public/product/${id}/skus`) as Promise<R<Sku[]>>,
     ])
     spu.value = spuRes.data
-    skus.value = (skuRes.data || []).filter((s) => s.status !== 0)
+    skus.value = skuRes.data || []
     selectedSkuId.value = skus.value[0]?.id ?? null
   } finally {
     loading.value = false
