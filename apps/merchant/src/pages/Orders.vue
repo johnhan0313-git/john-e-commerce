@@ -115,7 +115,7 @@ async function load() {
   }
 }
 
-async function openDetail(id: number) {
+async function openDetail(id: number | string) {
   const res = await client.get(`/shop/orders/${id}`) as R<Order>
   detail.value = res.data
   shipForm.provider = ''

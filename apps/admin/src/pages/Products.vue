@@ -67,8 +67,8 @@
         <el-form-item label="副标题">
           <el-input v-model="createForm.subtitle" />
         </el-form-item>
-        <el-form-item label="主图 URL">
-          <el-input v-model="createForm.imageUrl" placeholder="可选，单张主图" />
+        <el-form-item label="主图">
+          <ImageUpload v-model="createForm.imageUrl" folder="product" :aspect-ratio="1" hint="上传主图" />
         </el-form-item>
         <el-form-item label="详情">
           <el-input v-model="createForm.detail" type="textarea" :rows="3" />
@@ -122,6 +122,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import client from '@/api/client'
+import ImageUpload from '@/components/ImageUpload.vue'
 import type { PageResult, R, Sku, Spu } from '@/types'
 
 const list = ref<Spu[]>([])

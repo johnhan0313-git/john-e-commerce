@@ -3,7 +3,7 @@
     <div class="page-header">
       <div>
         <h2>店铺列表</h2>
-        <p class="desc">审核新店申请，按卖家 / 状态筛选</p>
+        <p class="desc">审核开店申请（与主体入驻审核独立），按卖家 / 状态筛选</p>
       </div>
       <div class="page-header-actions">
         <el-select

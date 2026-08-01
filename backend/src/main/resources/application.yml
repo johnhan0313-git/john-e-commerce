@@ -6,6 +6,10 @@ server:
 spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  servlet:
+    multipart:
+      max-file-size: 8MB
+      max-request-size: 10MB
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: Asia/Shanghai
@@ -70,6 +74,7 @@ app:
     access-key: ${MINIO_ACCESS_KEY:minioadmin}
     secret-key: ${MINIO_SECRET_KEY:minioadmin}
     bucket: ${MINIO_BUCKET:john-ecommerce}
+    public-base-url: ${MINIO_PUBLIC_BASE_URL:http://127.0.0.1:19000}
   cors:
     origins: ${CORS_ORIGINS:http://localhost:3022,http://localhost:3021,http://localhost:3023}
 

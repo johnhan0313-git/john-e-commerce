@@ -15,7 +15,7 @@
         </el-menu-item>
         <el-menu-item v-if="modules.isEnabled('merchant')" index="/merchants">
           <el-icon><UserFilled /></el-icon>
-          <span>卖家</span>
+          <span>卖家主体</span>
         </el-menu-item>
         <el-menu-item v-if="modules.isEnabled('merchant')" index="/shops">
           <el-icon><Shop /></el-icon>

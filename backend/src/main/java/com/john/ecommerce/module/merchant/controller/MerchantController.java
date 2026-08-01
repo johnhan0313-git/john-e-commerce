@@ -9,6 +9,7 @@ import com.john.ecommerce.module.fulfillment.dto.LogisticsVO;
 import com.john.ecommerce.module.merchant.dto.MerchantApplyDTO;
 import com.john.ecommerce.module.merchant.dto.MerchantAuditDTO;
 import com.john.ecommerce.module.merchant.dto.MerchantMeVO;
+import com.john.ecommerce.module.merchant.dto.MerchantUpdateDTO;
 import com.john.ecommerce.module.merchant.dto.MerchantVO;
 import com.john.ecommerce.module.merchant.service.MerchantService;
 import jakarta.validation.Valid;
@@ -31,6 +32,11 @@ public class MerchantController {
     @PostMapping("/apply")
     public R<MerchantVO> apply(@Valid @RequestBody MerchantApplyDTO dto) {
         return R.ok(merchantService.apply(dto));
+    }
+
+    @PutMapping("/me")
+    public R<MerchantVO> updateMe(@Valid @RequestBody MerchantUpdateDTO dto) {
+        return R.ok(merchantService.updateProfile(dto));
     }
 
     @PutMapping("/{id}/audit")

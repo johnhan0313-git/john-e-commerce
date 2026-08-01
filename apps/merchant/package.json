@@ -12,12 +12,14 @@
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
     "axios": "^1.7.0",
+    "cropperjs": "^1.6.2",
     "element-plus": "^2.14.3",
     "pinia": "^2.2.0",
     "vue": "^3.4.0",
     "vue-router": "^4.3.0"
   },
   "devDependencies": {
+    "@types/cropperjs": "^1.1.5",
     "@vitejs/plugin-vue": "^5.1.0",
     "@vue/test-utils": "^2.4.6",
     "happy-dom": "^15.11.7",

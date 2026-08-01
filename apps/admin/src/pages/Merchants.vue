@@ -2,8 +2,8 @@
   <div>
     <div class="page-header">
       <div>
-        <h2>卖家管理</h2>
-        <p class="desc">审核入驻申请，通过后自动创建默认店铺</p>
+        <h2>卖家主体</h2>
+        <p class="desc">审核卖家主体入驻；通过后自动开首店。新店审核请到「店铺」菜单</p>
       </div>
       <div class="page-header-actions">
         <el-select v-model="status" clearable placeholder="全部状态" style="width: 140px" @change="load">
@@ -17,7 +17,8 @@
     <div class="panel">
       <el-table v-loading="loading" :data="list">
         <el-table-column prop="id" label="ID" width="90" />
-        <el-table-column prop="name" label="名称" min-width="140" />
+        <el-table-column prop="name" label="主体名称" min-width="140" />
+        <el-table-column prop="licenseNo" label="执照号" min-width="120" />
         <el-table-column prop="contactName" label="联系人" width="120" />
         <el-table-column prop="contactPhone" label="电话" width="140" />
         <el-table-column label="状态" width="110">
@@ -60,6 +61,7 @@ import type { PageResult, R } from '@/types'
 interface MerchantRow {
   id: number | string
   name: string
+  licenseNo?: string
   contactName?: string
   contactPhone?: string
   status: number
@@ -101,7 +103,7 @@ async function load() {
 async function audit(id: number | string, approved: boolean) {
   try {
     await client.put(`/merchant/${id}/audit`, { approved })
-    ElMessage.success(approved ? '已通过并创建默认店铺' : '已拒绝')
+    ElMessage.success(approved ? '主体已通过（并开首店）' : '主体已拒绝')
     await load()
   } catch {
     /* axios interceptor already shows message */

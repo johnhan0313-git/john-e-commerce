@@ -7,6 +7,7 @@ import com.john.ecommerce.common.exception.BizException;
 import com.john.ecommerce.module.merchant.dto.MerchantApplyDTO;
 import com.john.ecommerce.module.merchant.dto.MerchantAuditDTO;
 import com.john.ecommerce.module.merchant.dto.MerchantMeVO;
+import com.john.ecommerce.module.merchant.dto.MerchantUpdateDTO;
 import com.john.ecommerce.module.merchant.dto.MerchantVO;
 import com.john.ecommerce.module.merchant.dto.ShopVO;
 import com.john.ecommerce.module.merchant.entity.Merchant;
@@ -55,6 +56,29 @@ public class MerchantService {
         return toVO(merchant);
     }
 
+    /**
+     * Update seller entity profile. Does not touch shop status/audit.
+     * Rejected merchants are moved back to pending for a fresh主体审核.
+     */
+    @Transactional
+    public MerchantVO updateProfile(MerchantUpdateDTO dto) {
+        Merchant merchant = findByCurrentUser();
+        if (merchant == null) throw new BizException("尚未入驻");
+
+        merchant.setName(dto.getName().trim());
+        merchant.setLogo(dto.getLogo());
+        merchant.setLicenseNo(dto.getLicenseNo());
+        merchant.setLicenseImages(dto.getLicenseImages());
+        merchant.setContactName(dto.getContactName().trim());
+        merchant.setContactPhone(dto.getContactPhone().trim());
+
+        if (merchant.getStatus() != null && merchant.getStatus() == 2) {
+            merchant.setStatus(0);
+        }
+        merchantMapper.updateById(merchant);
+        return toVO(merchant);
+    }
+
     @Transactional
     public MerchantVO audit(Long id, MerchantAuditDTO dto) {
         Merchant merchant = require(id);
@@ -63,6 +87,7 @@ public class MerchantService {
             merchant.setStatus(1);
             merchant.setSettledAt(System.currentTimeMillis());
             merchantMapper.updateById(merchant);
+            // First shop bootstrap only; subsequent shops use shop apply/audit.
             shopService.createDefaultShop(merchant.getId(), merchant.getName(), merchant.getLogo());
             userIdentityService.ensureSeller(merchant.getUserId());
         } else {

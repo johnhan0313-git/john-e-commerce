@@ -248,8 +248,22 @@ class MerchantPortalIT extends AbstractIntegrationTest {
                         .content("{\"approved\":true}"))
                 .andExpect(status().isOk());
 
+        mockMvc.perform(put("/merchant/me")
+                        .header("Authorization", bearer)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"多店卖家更新","contactName":"李四改","contactPhone":"13800000099","licenseNo":"LIC-2B"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.status").value(1))
+                .andExpect(jsonPath("$.data.name").value("多店卖家更新"))
+                .andExpect(jsonPath("$.data.contactPhone").value("13800000099"));
+
         MvcResult meRes = mockMvc.perform(get("/merchant/me").header("Authorization", bearer))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.merchant.name").value("多店卖家更新"))
+                .andExpect(jsonPath("$.data.shops.length()").value(1))
                 .andReturn();
         long shopA = objectMapper.readTree(meRes.getResponse().getContentAsString())
                 .path("data").path("currentShop").path("id").asLong();

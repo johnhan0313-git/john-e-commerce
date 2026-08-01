@@ -43,5 +43,6 @@ app:
     access-key: minioadmin
     secret-key: minioadmin
     bucket: john-ecommerce-test
+    public-base-url: http://127.0.0.1:19000
   cors:
     origins: http://localhost:3022,http://localhost:3021,http://localhost:3023

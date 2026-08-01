@@ -48,6 +48,8 @@ public class AppProperties {
         private String accessKey = "minioadmin";
         private String secretKey = "minioadmin";
         private String bucket = "john-ecommerce";
+        /** Browser-reachable base URL for uploaded objects (defaults to endpoint). */
+        private String publicBaseUrl = "";
     }
 
     @Data

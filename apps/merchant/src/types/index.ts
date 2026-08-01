@@ -12,10 +12,11 @@ export interface PageResult<T> {
 }
 
 export interface Merchant {
-  id: number
-  userId: number
+  id: number | string
+  userId: number | string
   name: string
   logo?: string
+  licenseNo?: string
   status: number
   statusLabel?: string
   contactName?: string
@@ -23,8 +24,8 @@ export interface Merchant {
 }
 
 export interface Shop {
-  id: number
-  merchantId: number
+  id: number | string
+  merchantId: number | string
   name: string
   logo?: string
   status: number
@@ -38,24 +39,24 @@ export interface MerchantMe {
 }
 
 export interface Spu {
-  id: number
+  id: number | string
   name: string
   subtitle?: string
   status: number
-  shopId?: number
-  merchantId?: number
+  shopId?: number | string
+  merchantId?: number | string
 }
 
 export interface Sku {
-  id: number
-  spuId: number
+  id: number | string
+  spuId: number | string
   skuName: string
   price: number
   status: number
 }
 
 export interface Order {
-  id: number
+  id: number | string
   orderNo: string
   status: number
   statusLabel?: string
@@ -63,7 +64,7 @@ export interface Order {
   payStatusLabel?: string
   payAmount?: number
   paidAmount?: number
-  shopId?: number
-  merchantId?: number
-  items?: Array<{ id: number; skuName: string; quantity: number; price: number }>
+  shopId?: number | string
+  merchantId?: number | string
+  items?: Array<{ id: number | string; skuName: string; quantity: number; price: number }>
 }

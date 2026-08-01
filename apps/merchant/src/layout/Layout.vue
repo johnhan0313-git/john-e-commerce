@@ -15,7 +15,7 @@
         </el-menu-item>
         <el-menu-item index="/apply">
           <el-icon><Document /></el-icon>
-          <span>入驻 / 店铺</span>
+          <span>主体 / 店铺</span>
         </el-menu-item>
         <el-menu-item v-if="approved" index="/products">
           <el-icon><Goods /></el-icon>
@@ -41,9 +41,9 @@
           >
             <el-option
               v-for="s in openShops"
-              :key="s.id"
+              :key="String(s.id)"
               :label="s.name"
-              :value="s.id"
+              :value="String(s.id)"
             />
           </el-select>
         </div>
@@ -57,7 +57,7 @@
       </el-header>
       <el-main class="main">
         <div class="page">
-          <router-view />
+          <router-view :key="viewKey" />
         </div>
       </el-main>
     </el-container>
@@ -81,15 +81,16 @@ const approved = computed(() => merchant.isApproved())
 const merchantApproved = computed(() => merchant.me?.merchant?.status === 1)
 const openShops = computed(() => merchant.openShops)
 const activeShopId = computed(() => merchant.activeShopId)
+/** Remount page content when shop switches so lists reload with new X-Shop-Id. */
+const viewKey = computed(() => `${route.path}::${activeShopId.value ?? 'none'}`)
 const asideWidth = '232px'
 
 onMounted(() => {
   if (auth.isLoggedIn && !merchant.loaded) merchant.fetchMe()
 })
 
-function onShopChange(id: number) {
+function onShopChange(id: string | number) {
   merchant.setActiveShop(id)
-  router.go(0)
 }
 
 function logout() {

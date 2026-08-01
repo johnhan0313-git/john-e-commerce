@@ -37,7 +37,7 @@
             <p class="muted">{{ approved ? '管理本店商品与订单履约' : '先完成入驻申请，审核通过后开放商品能力' }}</p>
           </div>
           <div class="cta-actions">
-            <el-button v-if="!approved" type="primary" @click="$router.push('/apply')">去入驻</el-button>
+            <el-button v-if="!approved" type="primary" @click="$router.push('/apply')">主体 / 店铺</el-button>
             <template v-else>
               <el-button type="primary" @click="$router.push('/products')">管理商品</el-button>
               <el-button @click="$router.push('/orders')">查看订单</el-button>
@@ -49,7 +49,7 @@
 
     <div v-else class="panel">
       <div class="panel-body empty-wrap">
-        <el-empty description="尚未入驻，请先提交申请">
+        <el-empty description="尚未提交主体入驻">
           <el-button type="primary" @click="$router.push('/apply')">去入驻</el-button>
         </el-empty>
       </div>

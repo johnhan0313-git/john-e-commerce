@@ -51,8 +51,8 @@
         <el-form-item label="副标题">
           <el-input v-model="createForm.subtitle" />
         </el-form-item>
-        <el-form-item label="主图 URL">
-          <el-input v-model="createForm.imageUrl" />
+        <el-form-item label="主图">
+          <ImageUpload v-model="createForm.imageUrl" folder="product" :aspect-ratio="1" hint="上传主图" />
         </el-form-item>
         <el-form-item label="详情">
           <el-input v-model="createForm.detail" type="textarea" :rows="3" />
@@ -106,6 +106,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import client from '@/api/client'
+import ImageUpload from '@/components/ImageUpload.vue'
 import type { PageResult, R, Sku, Spu } from '@/types'
 
 const list = ref<Spu[]>([])
@@ -215,7 +216,7 @@ async function createSku() {
   }
 }
 
-async function removeSku(id: number) {
+async function removeSku(id: number | string) {
   await ElMessageBox.confirm('确认删除该 SKU？', '提示')
   await client.delete(`/shop/skus/${id}`)
   ElMessage.success('已删除')
