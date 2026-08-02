@@ -2,7 +2,7 @@
   <section class="home">
     <div class="hero card">
       <div>
-        <p class="eyebrow">John Mall</p>
+        <p class="eyebrow">{{ branding.displayName }}</p>
         <h1>发现好物</h1>
         <p class="muted">多业态演示商城 · 登录后即可下单支付</p>
         <router-link class="btn" to="/products">去逛逛</router-link>
@@ -31,12 +31,15 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import client from '@/api/client'
+import { useBrandingStore } from '@/stores/branding'
 import type { Banner, R } from '@/types'
 
+const branding = useBrandingStore()
 const banners = ref<Banner[]>([])
 const loading = ref(true)
 
 onMounted(async () => {
+  if (!branding.loaded) branding.fetch()
   try {
     const res = await client.get('/public/content/banner') as R<Banner[]>
     banners.value = res.data || []

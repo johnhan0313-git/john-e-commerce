@@ -1,7 +1,10 @@
 <template>
   <div class="login-page">
     <div class="card login-card">
-      <h1>登录 / 注册</h1>
+      <div class="login-brand">
+        <img v-if="branding.logo" :src="branding.logo" alt="" class="login-logo" />
+        <h1>{{ branding.displayName }}</h1>
+      </div>
       <p class="muted">邮箱验证码登录，未注册将自动开通买家账号（无需密码）</p>
       <form @submit.prevent="onSubmit">
         <label class="field">
@@ -35,9 +38,10 @@
 </template>
 
 <script setup lang="ts">
-import { onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useBrandingStore } from '@/stores/branding'
 import { useModulesStore } from '@/stores/modules'
 import { toast } from '@/utils/toast'
 
@@ -50,9 +54,14 @@ const cooldown = ref(0)
 let timer: number | undefined
 
 const auth = useAuthStore()
+const branding = useBrandingStore()
 const modules = useModulesStore()
 const router = useRouter()
 const route = useRoute()
+
+onMounted(() => {
+  if (!branding.loaded) branding.fetch()
+})
 
 async function sendCode() {
   err.value = ''
@@ -109,6 +118,26 @@ onUnmounted(() => {
 .login-card {
   width: min(100%, 400px);
   padding: var(--space-6);
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.login-brand h1 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.login-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 8px;
+  flex-shrink: 0;
 }
 
 .code-row {

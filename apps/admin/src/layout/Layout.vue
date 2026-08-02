@@ -37,6 +37,10 @@
           <el-icon><SetUp /></el-icon>
           <span>模块配置</span>
         </el-menu-item>
+        <el-menu-item index="/tenant/branding">
+          <el-icon><Brush /></el-icon>
+          <span>商城品牌</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     <el-container class="main-wrap">
@@ -61,7 +65,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Goods, List, Odometer, SetUp, Shop, UserFilled, Wallet } from '@element-plus/icons-vue'
+import { Brush, Goods, List, Odometer, SetUp, Shop, UserFilled, Wallet } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { useModulesStore } from '@/stores/modules'
 

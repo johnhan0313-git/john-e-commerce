@@ -2,6 +2,8 @@ package com.john.ecommerce.module.tenant.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.john.ecommerce.common.result.R;
+import com.john.ecommerce.module.tenant.dto.TenantBrandingUpdateDTO;
+import com.john.ecommerce.module.tenant.dto.TenantBrandingVO;
 import com.john.ecommerce.module.tenant.dto.TenantCreateDTO;
 import com.john.ecommerce.module.tenant.dto.TenantVO;
 import com.john.ecommerce.module.tenant.service.TenantService;
@@ -19,6 +21,16 @@ public class TenantController {
     @PostMapping
     public R<TenantVO> create(@Valid @RequestBody TenantCreateDTO dto) {
         return R.ok(tenantService.create(dto));
+    }
+
+    @GetMapping("/branding")
+    public R<TenantBrandingVO> getBranding() {
+        return R.ok(tenantService.getCurrentBranding());
+    }
+
+    @PutMapping("/branding")
+    public R<TenantBrandingVO> updateBranding(@Valid @RequestBody TenantBrandingUpdateDTO dto) {
+        return R.ok(tenantService.updateBranding(dto));
     }
 
     @GetMapping("/{id}")

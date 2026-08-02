@@ -122,3 +122,12 @@ export interface Banner {
   linkUrl?: string
   position?: string
 }
+
+export interface TenantBranding {
+  tenantId?: number | string
+  name?: string
+  slug?: string
+  displayName?: string
+  logo?: string
+  favicon?: string
+}

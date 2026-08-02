@@ -2,7 +2,10 @@
   <div id="mall-app">
     <header class="topbar">
       <div class="container topbar-inner">
-        <router-link to="/" class="brand">John Mall</router-link>
+        <router-link to="/" class="brand">
+          <img v-if="branding.logo" :src="branding.logo" alt="" class="brand-logo" />
+          <span>{{ branding.displayName }}</span>
+        </router-link>
         <nav class="nav">
           <router-link to="/">首页</router-link>
           <router-link to="/products">商品</router-link>
@@ -27,13 +30,20 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useBrandingStore } from '@/stores/branding'
 import { useModulesStore } from '@/stores/modules'
 import { useRouter } from 'vue-router'
 
 const auth = useAuthStore()
+const branding = useBrandingStore()
 const modules = useModulesStore()
 const router = useRouter()
+
+onMounted(() => {
+  branding.fetch()
+})
 
 if (auth.isLoggedIn) {
   modules.fetch()
@@ -69,6 +79,19 @@ function onLogout() {
   font-size: 1.25rem;
   font-weight: 600;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 6px;
+  flex-shrink: 0;
 }
 
 .nav {

@@ -2,9 +2,15 @@
   <el-container class="layout">
     <el-aside :width="asideWidth" class="aside">
       <div class="brand">
-        <span class="brand-mark">M</span>
+        <img
+          v-if="merchantLogo"
+          :src="merchantLogo"
+          alt=""
+          class="brand-logo"
+        />
+        <span v-else class="brand-mark">{{ brandMark }}</span>
         <div class="brand-text">
-          <strong>John Merchant</strong>
+          <strong>{{ brandTitle }}</strong>
           <span>卖家工作台</span>
         </div>
       </div>
@@ -85,6 +91,10 @@ const activeShopId = computed(() => merchant.activeShopId)
 const viewKey = computed(() => `${route.path}::${activeShopId.value ?? 'none'}`)
 const asideWidth = '232px'
 
+const merchantLogo = computed(() => merchant.me?.merchant?.logo || '')
+const brandTitle = computed(() => merchant.me?.merchant?.name?.trim() || 'John Merchant')
+const brandMark = computed(() => (brandTitle.value.charAt(0) || 'M').toUpperCase())
+
 onMounted(() => {
   if (auth.isLoggedIn && !merchant.loaded) merchant.fetchMe()
 })
@@ -133,6 +143,16 @@ function logout() {
   color: #fff;
   background: linear-gradient(135deg, #14b8a6, #0f766e);
   box-shadow: 0 4px 12px rgba(20, 184, 166, 0.35);
+  flex-shrink: 0;
+}
+
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #fff;
+  flex-shrink: 0;
 }
 
 .brand-text {
