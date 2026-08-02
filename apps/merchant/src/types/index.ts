@@ -38,6 +38,11 @@ export interface MerchantMe {
   currentShop?: Shop | null
 }
 
+export interface SalesAttr {
+  name: string
+  values: string[]
+}
+
 export interface Spu {
   id: number | string
   name: string
@@ -47,6 +52,7 @@ export interface Spu {
   status: number
   shopId?: number | string
   merchantId?: number | string
+  salesAttrs?: SalesAttr[]
 }
 
 export interface Sku {
@@ -57,6 +63,7 @@ export interface Sku {
   price: number
   status: number
   available?: number
+  specValues?: Record<string, string>
 }
 
 export interface Order {

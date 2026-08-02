@@ -3,7 +3,7 @@
     <div class="page-header">
       <div>
         <h2>商品管理</h2>
-        <p class="desc">全域 SPU / SKU，可按卖家、店铺筛选</p>
+        <p class="desc">创建/编辑同一页：规格笛卡尔积生成 SKU</p>
       </div>
       <div class="page-header-actions">
         <el-input
@@ -20,7 +20,7 @@
           style="width: 140px"
           @change="onFilterChange"
         />
-        <el-button type="primary" @click="openCreate">创建 SPU</el-button>
+        <el-button type="primary" @click="openCreate">创建商品</el-button>
       </div>
     </div>
 
@@ -38,10 +38,9 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column label="操作" width="160" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button link type="primary" @click="openSku(row)">SKU</el-button>
             <el-button link type="warning" @click="toggleStatus(row)">
               {{ row.status === 1 ? '下架' : '上架' }}
             </el-button>
@@ -61,77 +60,110 @@
     </div>
 
     <el-dialog
-      v-model="spuVisible"
-      :title="spuForm.id ? '编辑 SPU' : '创建 SPU'"
-      width="520px"
+      v-model="editorVisible"
+      :title="form.id ? '编辑商品' : '创建商品'"
+      width="920px"
+      top="4vh"
       destroy-on-close
     >
-      <el-form label-width="90px">
+      <el-form label-width="90px" v-loading="editorLoading">
+        <div class="section-title">基本信息</div>
         <el-form-item label="名称" required>
-          <el-input v-model="spuForm.name" />
+          <el-input v-model="form.name" placeholder="商品名称" />
         </el-form-item>
         <el-form-item label="副标题">
-          <el-input v-model="spuForm.subtitle" />
+          <el-input v-model="form.subtitle" />
         </el-form-item>
         <el-form-item label="主图">
-          <ImageUpload v-model="spuForm.imageUrl" folder="product" :aspect-ratio="1" hint="上传主图" />
+          <ImageUpload v-model="form.imageUrl" folder="product" :aspect-ratio="1" hint="上传主图" />
         </el-form-item>
         <el-form-item label="详情">
-          <el-input v-model="spuForm.detail" type="textarea" :rows="3" />
+          <el-input v-model="form.detail" type="textarea" :rows="2" />
         </el-form-item>
+
+        <div class="section-title">
+          销售规格
+          <span class="section-hint">填写属性后自动笛卡尔积生成 SKU；无规格则生成 1 个默认 SKU</span>
+        </div>
+        <div class="spec-list">
+          <div v-for="(attr, idx) in form.salesAttrs" :key="idx" class="spec-row">
+            <el-input
+              v-model="attr.name"
+              placeholder="规格名，如 颜色"
+              style="width: 140px"
+              @change="regenSkus"
+            />
+            <el-select
+              v-model="attr.values"
+              multiple
+              filterable
+              allow-create
+              default-first-option
+              placeholder="回车添加规格值"
+              style="flex: 1"
+              @change="regenSkus"
+            />
+            <el-button link type="danger" @click="removeAttr(idx)">删除</el-button>
+          </div>
+          <el-button type="primary" link @click="addAttr">+ 添加规格</el-button>
+        </div>
+
+        <div class="section-title">
+          SKU 列表
+          <span class="section-hint">共 {{ form.skus.length }} 行</span>
+        </div>
+        <div class="sku-batch">
+          <el-input-number v-model="batchPrice" :min="0" :precision="2" :step="1" />
+          <el-button size="small" @click="applyBatchPrice">统一价格</el-button>
+          <el-input-number v-model="batchStock" :min="0" :step="1" />
+          <el-button size="small" @click="applyBatchStock">统一库存</el-button>
+        </div>
+        <el-table :data="form.skus" size="small" max-height="320" border>
+          <el-table-column
+            v-for="attr in activeAttrNames"
+            :key="attr"
+            :label="attr"
+            min-width="90"
+          >
+            <template #default="{ row }">{{ row.specValues[attr] }}</template>
+          </el-table-column>
+          <el-table-column label="SKU 名称" min-width="140">
+            <template #default="{ row }">
+              <el-input v-model="row.skuName" size="small" />
+            </template>
+          </el-table-column>
+          <el-table-column label="编码" min-width="110">
+            <template #default="{ row }">
+              <el-input v-model="row.skuCode" size="small" placeholder="可选" />
+            </template>
+          </el-table-column>
+          <el-table-column label="价格" width="130">
+            <template #default="{ row }">
+              <el-input-number v-model="row.price" :min="0" :precision="2" :step="1" size="small" controls-position="right" />
+            </template>
+          </el-table-column>
+          <el-table-column label="库存" width="120">
+            <template #default="{ row }">
+              <el-input-number v-model="row.initStock" :min="0" :step="1" size="small" controls-position="right" />
+            </template>
+          </el-table-column>
+          <el-table-column label="" width="70" fixed="right">
+            <template #default="{ $index }">
+              <el-button
+                link
+                type="danger"
+                size="small"
+                :disabled="form.skus.length <= 1"
+                @click="form.skus.splice($index, 1)"
+              >移除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
       </el-form>
       <template #footer>
-        <el-button @click="spuVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="saveSpu">
-          {{ spuForm.id ? '保存' : '创建' }}
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <el-drawer v-model="skuVisible" :title="`SKU · ${currentSpu?.name || ''}`" size="560px">
-      <div class="drawer-toolbar">
-        <span class="muted">SPU #{{ currentSpu?.id }}</span>
-        <el-button type="primary" size="small" @click="openSkuCreate">新增 SKU</el-button>
-      </div>
-      <el-table :data="skus" size="small" v-loading="skuLoading">
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="skuName" label="名称" />
-        <el-table-column prop="price" label="价格" width="100" />
-        <el-table-column prop="available" label="可售" width="80" />
-        <el-table-column prop="status" label="状态" width="80" />
-        <el-table-column label="操作" width="120">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="openSkuEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="removeSku(row.id)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-drawer>
-
-    <el-dialog
-      v-model="skuDialogVisible"
-      :title="skuForm.id ? '编辑 SKU' : '新增 SKU'"
-      width="480px"
-      destroy-on-close
-    >
-      <el-form label-width="90px">
-        <el-form-item label="名称" required>
-          <el-input v-model="skuForm.skuName" />
-        </el-form-item>
-        <el-form-item label="编码">
-          <el-input v-model="skuForm.skuCode" />
-        </el-form-item>
-        <el-form-item label="价格" required>
-          <el-input-number v-model="skuForm.price" :min="0" :precision="2" :step="1" />
-        </el-form-item>
-        <el-form-item v-if="!skuForm.id" label="初始库存">
-          <el-input-number v-model="skuForm.initStock" :min="0" :step="1" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="skuDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="saveSku">
-          {{ skuForm.id ? '保存' : '创建' }}
+        <el-button @click="editorVisible = false">取消</el-button>
+        <el-button type="primary" :loading="saving" @click="save">
+          {{ form.id ? '保存' : '创建并上架' }}
         </el-button>
       </template>
     </el-dialog>
@@ -139,11 +171,25 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import client from '@/api/client'
 import ImageUpload from '@/components/ImageUpload.vue'
-import type { PageResult, R, Sku, Spu } from '@/types'
+import type { PageResult, R, SalesAttr as SalesAttrType, Sku, Spu } from '@/types'
+
+interface SalesAttr {
+  name: string
+  values: string[]
+}
+
+interface SkuDraft {
+  id?: number | string
+  skuName: string
+  skuCode: string
+  price: number
+  initStock: number
+  specValues: Record<string, string>
+}
 
 const list = ref<Spu[]>([])
 const loading = ref(false)
@@ -152,33 +198,119 @@ const size = 20
 const total = ref(0)
 const merchantIdFilter = ref('')
 const shopIdFilter = ref('')
-
-const spuVisible = ref(false)
 const saving = ref(false)
-const spuForm = reactive({
+const editorVisible = ref(false)
+const editorLoading = ref(false)
+
+const form = reactive({
   id: null as number | null,
   name: '',
   subtitle: '',
   imageUrl: '',
   detail: '',
+  salesAttrs: [] as SalesAttr[],
+  skus: [] as SkuDraft[],
 })
+const batchPrice = ref(99)
+const batchStock = ref(0)
 
-const skuVisible = ref(false)
-const skuDialogVisible = ref(false)
-const skuLoading = ref(false)
-const currentSpu = ref<Spu | null>(null)
-const skus = ref<Sku[]>([])
-const skuForm = reactive({
-  id: null as number | null,
-  skuName: '',
-  skuCode: '',
-  price: 99,
-  initStock: 0,
-})
+const activeAttrNames = computed(() =>
+  form.salesAttrs
+    .filter((a) => a.name.trim() && a.values.some((v) => String(v).trim()))
+    .map((a) => a.name.trim()),
+)
 
 function onFilterChange() {
   page.value = 1
   load()
+}
+
+function cartesian(attrs: SalesAttr[]): Record<string, string>[] {
+  const valid = attrs
+    .map((a) => ({
+      name: a.name.trim(),
+      values: a.values.map((v) => String(v).trim()).filter(Boolean),
+    }))
+    .filter((a) => a.name && a.values.length)
+  if (!valid.length) return [{}]
+  return valid.reduce<Record<string, string>[]>((acc, attr) => {
+    const next: Record<string, string>[] = []
+    for (const row of acc) {
+      for (const v of attr.values) {
+        next.push({ ...row, [attr.name]: v })
+      }
+    }
+    return next
+  }, [{}])
+}
+
+function specKey(spec: Record<string, string>) {
+  return Object.keys(spec)
+    .sort()
+    .map((k) => `${k}=${spec[k]}`)
+    .join('|')
+}
+
+function buildSkuName(productName: string, spec: Record<string, string>) {
+  const parts = Object.values(spec).filter(Boolean)
+  if (!parts.length) return productName || '默认规格'
+  return `${productName || '商品'}-${parts.join('-')}`
+}
+
+function regenSkus() {
+  const combos = cartesian(form.salesAttrs)
+  const prev = new Map(form.skus.map((s) => [specKey(s.specValues), s]))
+  const productName = form.name.trim()
+  form.skus = combos.map((spec) => {
+    const old = prev.get(specKey(spec))
+    return {
+      id: old?.id,
+      skuName: old?.skuName || buildSkuName(productName, spec),
+      skuCode: old?.skuCode || '',
+      price: old?.price ?? batchPrice.value ?? 99,
+      initStock: old?.initStock ?? batchStock.value ?? 0,
+      specValues: { ...spec },
+    }
+  })
+}
+
+function addAttr() {
+  form.salesAttrs.push({ name: '', values: [] })
+}
+
+function removeAttr(idx: number) {
+  form.salesAttrs.splice(idx, 1)
+  regenSkus()
+}
+
+function applyBatchPrice() {
+  if (batchPrice.value == null) return
+  form.skus.forEach((s) => {
+    s.price = batchPrice.value
+  })
+}
+
+function applyBatchStock() {
+  if (batchStock.value == null) return
+  form.skus.forEach((s) => {
+    s.initStock = batchStock.value
+  })
+}
+
+function attrsFromSkus(skus: Sku[]): SalesAttr[] {
+  const map = new Map<string, Set<string>>()
+  for (const s of skus) {
+    const spec = s.specValues || {}
+    for (const [k, v] of Object.entries(spec)) {
+      if (!k || !v) continue
+      if (!map.has(k)) map.set(k, new Set())
+      map.get(k)!.add(String(v))
+    }
+  }
+  return [...map.entries()].map(([name, values]) => ({
+    name,
+    values: [...values],
+  }))
 }
 
 async function load() {
@@ -199,48 +331,118 @@ async function load() {
   }
 }
 
-function resetSpuForm() {
-  Object.assign(spuForm, { id: null, name: '', subtitle: '', imageUrl: '', detail: '' })
+function resetForm() {
+  Object.assign(form, {
+    id: null,
+    name: '',
+    subtitle: '',
+    imageUrl: '',
+    detail: '',
+    salesAttrs: [{ name: '颜色', values: [] }] as SalesAttr[],
+    skus: [] as SkuDraft[],
+  })
+  batchPrice.value = 99
+  batchStock.value = 0
+  regenSkus()
 }
 
 function openCreate() {
-  resetSpuForm()
-  spuVisible.value = true
+  resetForm()
+  editorVisible.value = true
 }
 
-function openEdit(row: Spu) {
-  spuForm.id = row.id
-  spuForm.name = row.name || ''
-  spuForm.subtitle = row.subtitle || ''
-  spuForm.imageUrl = row.mainImages?.[0] || ''
-  spuForm.detail = row.detail || ''
-  spuVisible.value = true
+async function openEdit(row: Spu) {
+  editorVisible.value = true
+  editorLoading.value = true
+  try {
+    const detail = (await client.get(`/product/${row.id}`)) as R<Spu>
+    const spu = detail.data || row
+    const skuRes = (await client.get('/sku', { params: { spuId: row.id } })) as R<Sku[]>
+    const skuList = skuRes.data || []
+    const salesAttrs: SalesAttr[] =
+      (spu.salesAttrs as SalesAttrType[] | undefined)?.length
+        ? spu.salesAttrs!.map((a) => ({
+            name: a.name,
+            values: [...(a.values || [])],
+          }))
+        : attrsFromSkus(skuList)
+    Object.assign(form, {
+      id: Number(spu.id),
+      name: spu.name || '',
+      subtitle: spu.subtitle || '',
+      imageUrl: spu.mainImages?.[0] || '',
+      detail: spu.detail || '',
+      salesAttrs: salesAttrs.length ? salesAttrs : [{ name: '颜色', values: [] }],
+      skus: skuList.map((s) => ({
+        id: s.id,
+        skuName: s.skuName || '',
+        skuCode: s.skuCode || '',
+        price: Number(s.price) || 0,
+        initStock: s.available ?? 0,
+        specValues: { ...(s.specValues || {}) },
+      })),
+    })
+    if (!form.skus.length) regenSkus()
+  } finally {
+    editorLoading.value = false
+  }
 }
 
-async function saveSpu() {
-  if (!spuForm.name.trim()) {
+function buildPayload() {
+  const salesAttrs = form.salesAttrs
+    .map((a) => ({
+      name: a.name.trim(),
+      values: a.values.map((v) => String(v).trim()).filter(Boolean),
+    }))
+    .filter((a) => a.name && a.values.length)
+
+  return {
+    name: form.name.trim(),
+    subtitle: form.subtitle || undefined,
+    detail: form.detail || undefined,
+    mainImages: form.imageUrl ? [form.imageUrl] : [],
+    salesAttrs,
+    skus: form.skus.map((s) => ({
+      id: s.id ? Number(s.id) : undefined,
+      skuName: s.skuName.trim() || buildSkuName(form.name.trim(), s.specValues),
+      skuCode: s.skuCode || undefined,
+      price: s.price,
+      initStock: s.initStock ?? 0,
+      status: 1,
+      specValues: Object.keys(s.specValues).length ? s.specValues : undefined,
+    })),
+  }
+}
+
+async function save() {
+  if (!form.name.trim()) {
     ElMessage.warning('请填写名称')
     return
   }
-  const payload = {
-    name: spuForm.name.trim(),
-    subtitle: spuForm.subtitle || undefined,
-    detail: spuForm.detail || undefined,
-    mainImages: spuForm.imageUrl ? [spuForm.imageUrl] : [],
+  if (!form.skus.length) {
+    ElMessage.warning('请至少保留一个 SKU')
+    return
   }
+  for (const s of form.skus) {
+    if (s.price == null || s.price < 0) {
+      ElMessage.warning('请为每个 SKU 填写价格')
+      return
+    }
+  }
+  const payload = buildPayload()
   saving.value = true
   try {
-    if (spuForm.id) {
-      await client.put(`/product/${spuForm.id}`, payload)
+    if (form.id) {
+      await client.put(`/product/${form.id}`, payload)
       ElMessage.success('已保存')
     } else {
-      const res = await client.post('/product', payload) as R<Spu>
+      const res = (await client.post('/product', payload)) as R<Spu>
       if (res.data?.id) {
         await client.put(`/product/${res.data.id}/status`, null, { params: { status: 1 } })
       }
-      ElMessage.success('已创建并上架')
+      ElMessage.success(`已创建 ${payload.skus.length} 个 SKU 并上架`)
     }
-    spuVisible.value = false
+    editorVisible.value = false
     await load()
   } finally {
     saving.value = false
@@ -254,96 +456,40 @@ async function toggleStatus(row: Spu) {
   ElMessage.success(next === 1 ? '已上架' : '已下架')
 }
 
-async function openSku(row: Spu) {
-  currentSpu.value = row
-  skuVisible.value = true
-  await loadSkus()
-}
-
-async function loadSkus() {
-  if (!currentSpu.value) return
-  skuLoading.value = true
-  try {
-    const res = await client.get('/sku', { params: { spuId: currentSpu.value.id } }) as R<Sku[]>
-    skus.value = res.data || []
-  } finally {
-    skuLoading.value = false
-  }
-}
-
-function openSkuCreate() {
-  Object.assign(skuForm, {
-    id: null,
-    skuName: `${currentSpu.value?.name || 'SKU'}-默认`,
-    skuCode: '',
-    price: 99,
-    initStock: 0,
-  })
-  skuDialogVisible.value = true
-}
-
-function openSkuEdit(row: Sku) {
-  Object.assign(skuForm, {
-    id: row.id,
-    skuName: row.skuName || '',
-    skuCode: row.skuCode || '',
-    price: Number(row.price) || 0,
-    initStock: 0,
-  })
-  skuDialogVisible.value = true
-}
-
-async function saveSku() {
-  if (!currentSpu.value) return
-  if (!skuForm.skuName.trim()) {
-    ElMessage.warning('请填写名称')
-    return
-  }
-  if (skuForm.price == null) {
-    ElMessage.warning('请填写价格')
-    return
-  }
-  saving.value = true
-  try {
-    const payload = {
-      spuId: currentSpu.value.id,
-      skuName: skuForm.skuName.trim(),
-      skuCode: skuForm.skuCode || undefined,
-      price: skuForm.price,
-      status: 1,
-    }
-    if (skuForm.id) {
-      await client.put(`/sku/${skuForm.id}`, payload)
-      ElMessage.success('SKU 已保存')
-    } else {
-      await client.post('/sku', {
-        ...payload,
-        initStock: skuForm.initStock ?? 0,
-      })
-      ElMessage.success('SKU 已创建')
-    }
-    skuDialogVisible.value = false
-    await loadSkus()
-  } finally {
-    saving.value = false
-  }
-}
-
-async function removeSku(id: number) {
-  await ElMessageBox.confirm('确认删除该 SKU？', '提示')
-  await client.delete(`/sku/${id}`)
-  ElMessage.success('已删除')
-  await loadSkus()
-}
-
 onMounted(load)
 </script>
 
 <style scoped>
-.drawer-toolbar {
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 8px 0 12px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  align-items: baseline;
+  gap: 10px;
+}
+.section-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--el-text-color-secondary);
+}
+.spec-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin-bottom: 16px;
+  padding: 0 0 0 90px;
+}
+.spec-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sku-batch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px 90px;
+  flex-wrap: wrap;
 }
 </style>

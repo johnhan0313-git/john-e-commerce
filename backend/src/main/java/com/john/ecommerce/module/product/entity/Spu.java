@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.john.ecommerce.common.base.BaseEntity;
+import com.john.ecommerce.module.product.dto.SalesAttrDTO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import java.util.List;
@@ -26,4 +27,6 @@ public class Spu extends BaseEntity {
     private Integer status;
     private Integer sales;
     private Integer sortOrder;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<SalesAttrDTO> salesAttrs;
 }

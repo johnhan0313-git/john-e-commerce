@@ -22,6 +22,11 @@ export interface LoginVO {
   }
 }
 
+export interface SalesAttr {
+  name: string
+  values: string[]
+}
+
 export interface Spu {
   id: number
   name: string
@@ -35,6 +40,7 @@ export interface Spu {
   productCode?: string
   status?: number
   sales?: number
+  salesAttrs?: SalesAttr[]
   createdAt?: number
 }
 

@@ -1,5 +1,6 @@
 package com.john.ecommerce.module.product.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import java.util.List;
@@ -18,4 +19,10 @@ public class SpuCreateDTO {
     private String detail;
     private Integer productType;
     private Integer sortOrder;
+    /** 销售规格定义，如 [{name:"颜色", values:["红","蓝"]}] */
+    @Valid
+    private List<SalesAttrDTO> salesAttrs;
+    /** 创建时一并写入的 SKU 行（笛卡尔积结果） */
+    @Valid
+    private List<SkuItemDTO> skus;
 }

@@ -11,7 +11,7 @@ import java.util.Map;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName(value = "t_tenant", autoResultMap = true)
+@TableName(value = "t_tenant", autoResultMap = true, excludeProperty = {"tenantId"})
 public class Tenant extends BaseEntity {
     private String name;
     private String slug;

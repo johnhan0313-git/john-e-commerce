@@ -29,7 +29,7 @@ public class FileStorageService {
             "image/jpeg", "image/png", "image/webp", "image/gif"
     );
     private static final Set<String> ALLOWED_FOLDERS = Set.of(
-            "logo", "product", "shop", "banner", "misc"
+            "logo", "product", "shop", "banner", "branding", "misc"
     );
 
     private final MinioClient minioClient;

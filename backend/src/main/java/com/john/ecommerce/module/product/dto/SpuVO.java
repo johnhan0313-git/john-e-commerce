@@ -19,5 +19,6 @@ public class SpuVO {
     private Integer status;
     private Integer sales;
     private Integer sortOrder;
+    private List<SalesAttrDTO> salesAttrs;
     private Long createdAt;
 }

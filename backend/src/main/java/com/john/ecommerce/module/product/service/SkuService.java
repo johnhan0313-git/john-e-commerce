@@ -58,6 +58,9 @@ public class SkuService {
         if (dto.getBarcode() != null) sku.setBarcode(dto.getBarcode());
         if (dto.getStatus() != null) sku.setStatus(dto.getStatus());
         skuMapper.updateById(sku);
+        if (dto.getInitStock() != null) {
+            inventoryFacade.initOrSetAvailable(DEFAULT_WAREHOUSE_ID, sku.getId(), dto.getInitStock());
+        }
         return toVO(sku);
     }
 
