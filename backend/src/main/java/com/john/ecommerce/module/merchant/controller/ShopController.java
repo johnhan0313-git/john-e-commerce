@@ -83,6 +83,11 @@ public class ShopController {
         return R.ok(shopPortalService.createProduct(dto));
     }
 
+    @PutMapping("/products/{id:\\d+}")
+    public R<SpuVO> updateProduct(@PathVariable Long id, @Valid @RequestBody SpuCreateDTO dto) {
+        return R.ok(shopPortalService.updateProduct(id, dto));
+    }
+
     @PutMapping("/products/{id}/status")
     public R<Void> updateProductStatus(@PathVariable Long id, @RequestParam Integer status) {
         shopPortalService.updateProductStatus(id, status);
@@ -97,6 +102,11 @@ public class ShopController {
     @PostMapping("/products/{spuId}/skus")
     public R<SkuVO> createSku(@PathVariable Long spuId, @Valid @RequestBody SkuCreateDTO dto) {
         return R.ok(shopPortalService.createSku(spuId, dto));
+    }
+
+    @PutMapping("/skus/{id}")
+    public R<SkuVO> updateSku(@PathVariable Long id, @Valid @RequestBody SkuCreateDTO dto) {
+        return R.ok(shopPortalService.updateSku(id, dto));
     }
 
     @DeleteMapping("/skus/{id}")

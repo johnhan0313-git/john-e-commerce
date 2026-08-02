@@ -42,6 +42,8 @@ export interface Spu {
   id: number | string
   name: string
   subtitle?: string
+  mainImages?: string[]
+  detail?: string
   status: number
   shopId?: number | string
   merchantId?: number | string
@@ -51,6 +53,7 @@ export interface Sku {
   id: number | string
   spuId: number | string
   skuName: string
+  skuCode?: string
   price: number
   status: number
   available?: number

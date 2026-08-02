@@ -35,10 +35,24 @@ public class ProductService {
         return toVO(spu);
     }
 
-    public SpuVO getById(Long id) {
-        Spu spu = spuMapper.selectById(id);
-        if (spu == null) throw new BizException("商品不存在");
+    public SpuVO update(Long id, SpuCreateDTO dto) {
+        Spu spu = require(id);
+        spu.setName(dto.getName().trim());
+        spu.setSubtitle(blankToNull(dto.getSubtitle()));
+        if (dto.getCategoryId() != null) spu.setCategoryId(dto.getCategoryId());
+        if (dto.getBrandId() != null) spu.setBrandId(dto.getBrandId());
+        if (dto.getProductCode() != null) spu.setProductCode(blankToNull(dto.getProductCode()));
+        spu.setMainImages(dto.getMainImages());
+        spu.setDetail(blankToNull(dto.getDetail()));
+        if (dto.getProductType() != null) spu.setProductType(dto.getProductType());
+        if (dto.getSortOrder() != null) spu.setSortOrder(dto.getSortOrder());
+        // merchantId / shopId / status 不在此接口改
+        spuMapper.updateById(spu);
         return toVO(spu);
+    }
+
+    public SpuVO getById(Long id) {
+        return toVO(require(id));
     }
 
     public Page<SpuVO> list(int page, int size, Integer status) {
@@ -61,10 +75,15 @@ public class ProductService {
     }
 
     public void updateStatus(Long id, Integer status) {
-        Spu spu = spuMapper.selectById(id);
-        if (spu == null) throw new BizException("商品不存在");
+        Spu spu = require(id);
         spu.setStatus(status);
         spuMapper.updateById(spu);
+    }
+
+    public Spu require(Long id) {
+        Spu spu = spuMapper.selectById(id);
+        if (spu == null) throw new BizException("商品不存在");
+        return spu;
     }
 
     private SpuVO toVO(Spu s) {
@@ -85,5 +104,10 @@ public class ProductService {
         vo.setSortOrder(s.getSortOrder());
         vo.setCreatedAt(s.getCreatedAt());
         return vo;
+    }
+
+    private static String blankToNull(String s) {
+        if (s == null || s.isBlank()) return null;
+        return s.trim();
     }
 }

@@ -22,8 +22,9 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button link type="primary" @click="openSku(row)">SKU</el-button>
             <el-button link type="warning" @click="toggleStatus(row)">
               {{ row.status === 1 ? '下架' : '上架' }}
@@ -43,24 +44,31 @@
       />
     </div>
 
-    <el-dialog v-model="createVisible" title="创建 SPU" width="520px">
+    <el-dialog
+      v-model="spuVisible"
+      :title="spuForm.id ? '编辑 SPU' : '创建 SPU'"
+      width="520px"
+      destroy-on-close
+    >
       <el-form label-width="90px">
         <el-form-item label="名称" required>
-          <el-input v-model="createForm.name" />
+          <el-input v-model="spuForm.name" />
         </el-form-item>
         <el-form-item label="副标题">
-          <el-input v-model="createForm.subtitle" />
+          <el-input v-model="spuForm.subtitle" />
         </el-form-item>
         <el-form-item label="主图">
-          <ImageUpload v-model="createForm.imageUrl" folder="product" :aspect-ratio="1" hint="上传主图" />
+          <ImageUpload v-model="spuForm.imageUrl" folder="product" :aspect-ratio="1" hint="上传主图" />
         </el-form-item>
         <el-form-item label="详情">
-          <el-input v-model="createForm.detail" type="textarea" :rows="3" />
+          <el-input v-model="spuForm.detail" type="textarea" :rows="3" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="createVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="createSpu">创建</el-button>
+        <el-button @click="spuVisible = false">取消</el-button>
+        <el-button type="primary" :loading="saving" @click="saveSpu">
+          {{ spuForm.id ? '保存' : '创建' }}
+        </el-button>
       </template>
     </el-dialog>
 
@@ -75,15 +83,21 @@
         <el-table-column prop="price" label="价格" width="100" />
         <el-table-column prop="available" label="可售" width="80" />
         <el-table-column prop="status" label="状态" width="80" />
-        <el-table-column label="操作" width="80">
+        <el-table-column label="操作" width="120">
           <template #default="{ row }">
+            <el-button link type="primary" @click="openSkuEdit(row)">编辑</el-button>
             <el-button link type="danger" @click="removeSku(row.id)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-drawer>
 
-    <el-dialog v-model="skuCreateVisible" title="新增 SKU" width="480px">
+    <el-dialog
+      v-model="skuDialogVisible"
+      :title="skuForm.id ? '编辑 SKU' : '新增 SKU'"
+      width="480px"
+      destroy-on-close
+    >
       <el-form label-width="90px">
         <el-form-item label="名称" required>
           <el-input v-model="skuForm.skuName" />
@@ -94,13 +108,15 @@
         <el-form-item label="价格" required>
           <el-input-number v-model="skuForm.price" :min="0" :precision="2" :step="1" />
         </el-form-item>
-        <el-form-item label="初始库存">
+        <el-form-item v-if="!skuForm.id" label="初始库存">
           <el-input-number v-model="skuForm.initStock" :min="0" :step="1" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="skuCreateVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="createSku">创建</el-button>
+        <el-button @click="skuDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="saving" @click="saveSku">
+          {{ skuForm.id ? '保存' : '创建' }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -118,15 +134,27 @@ const loading = ref(false)
 const page = ref(1)
 const size = 20
 const total = ref(0)
-const createVisible = ref(false)
+const spuVisible = ref(false)
 const saving = ref(false)
-const createForm = reactive({ name: '', subtitle: '', imageUrl: '', detail: '' })
+const spuForm = reactive({
+  id: '' as string | number | '',
+  name: '',
+  subtitle: '',
+  imageUrl: '',
+  detail: '',
+})
 const skuVisible = ref(false)
-const skuCreateVisible = ref(false)
+const skuDialogVisible = ref(false)
 const skuLoading = ref(false)
 const currentSpu = ref<Spu | null>(null)
 const skus = ref<Sku[]>([])
-const skuForm = reactive({ skuName: '', skuCode: '', price: 99, initStock: 0 })
+const skuForm = reactive({
+  id: '' as string | number | '',
+  skuName: '',
+  skuCode: '',
+  price: 99,
+  initStock: 0,
+})
 
 async function load() {
   loading.value = true
@@ -141,29 +169,48 @@ async function load() {
   }
 }
 
-function openCreate() {
-  Object.assign(createForm, { name: '', subtitle: '', imageUrl: '', detail: '' })
-  createVisible.value = true
+function resetSpuForm() {
+  Object.assign(spuForm, { id: '', name: '', subtitle: '', imageUrl: '', detail: '' })
 }
 
-async function createSpu() {
-  if (!createForm.name.trim()) {
+function openCreate() {
+  resetSpuForm()
+  spuVisible.value = true
+}
+
+function openEdit(row: Spu) {
+  spuForm.id = row.id
+  spuForm.name = row.name || ''
+  spuForm.subtitle = row.subtitle || ''
+  spuForm.imageUrl = row.mainImages?.[0] || ''
+  spuForm.detail = row.detail || ''
+  spuVisible.value = true
+}
+
+async function saveSpu() {
+  if (!spuForm.name.trim()) {
     ElMessage.warning('请填写名称')
     return
   }
+  const payload = {
+    name: spuForm.name.trim(),
+    subtitle: spuForm.subtitle || undefined,
+    detail: spuForm.detail || undefined,
+    mainImages: spuForm.imageUrl ? [spuForm.imageUrl] : [],
+  }
   saving.value = true
   try {
-    const res = await client.post('/shop/products', {
-      name: createForm.name.trim(),
-      subtitle: createForm.subtitle || undefined,
-      detail: createForm.detail || undefined,
-      mainImages: createForm.imageUrl ? [createForm.imageUrl] : undefined,
-    }) as R<Spu>
-    if (res.data?.id) {
-      await client.put(`/shop/products/${res.data.id}/status`, null, { params: { status: 1 } })
+    if (spuForm.id) {
+      await client.put(`/shop/products/${spuForm.id}`, payload)
+      ElMessage.success('已保存')
+    } else {
+      const res = await client.post('/shop/products', payload) as R<Spu>
+      if (res.data?.id) {
+        await client.put(`/shop/products/${res.data.id}/status`, null, { params: { status: 1 } })
+      }
+      ElMessage.success('已创建并上架')
     }
-    ElMessage.success('已创建并上架')
-    createVisible.value = false
+    spuVisible.value = false
     await load()
   } finally {
     saving.value = false
@@ -195,27 +242,57 @@ async function loadSkus() {
 }
 
 function openSkuCreate() {
-  skuForm.skuName = `${currentSpu.value?.name || 'SKU'}-默认`
-  skuForm.skuCode = ''
-  skuForm.price = 99
-  skuForm.initStock = 0
-  skuCreateVisible.value = true
+  Object.assign(skuForm, {
+    id: '',
+    skuName: `${currentSpu.value?.name || 'SKU'}-默认`,
+    skuCode: '',
+    price: 99,
+    initStock: 0,
+  })
+  skuDialogVisible.value = true
 }
 
-async function createSku() {
+function openSkuEdit(row: Sku) {
+  Object.assign(skuForm, {
+    id: row.id,
+    skuName: row.skuName || '',
+    skuCode: row.skuCode || '',
+    price: Number(row.price) || 0,
+    initStock: 0,
+  })
+  skuDialogVisible.value = true
+}
+
+async function saveSku() {
   if (!currentSpu.value) return
+  if (!skuForm.skuName.trim()) {
+    ElMessage.warning('请填写名称')
+    return
+  }
+  if (skuForm.price == null) {
+    ElMessage.warning('请填写价格')
+    return
+  }
   saving.value = true
   try {
-    await client.post(`/shop/products/${currentSpu.value.id}/skus`, {
+    const payload = {
       spuId: currentSpu.value.id,
-      skuName: skuForm.skuName,
+      skuName: skuForm.skuName.trim(),
       skuCode: skuForm.skuCode || undefined,
       price: skuForm.price,
-      initStock: skuForm.initStock ?? 0,
       status: 1,
-    })
-    ElMessage.success('SKU 已创建')
-    skuCreateVisible.value = false
+    }
+    if (skuForm.id) {
+      await client.put(`/shop/skus/${skuForm.id}`, payload)
+      ElMessage.success('SKU 已保存')
+    } else {
+      await client.post(`/shop/products/${currentSpu.value.id}/skus`, {
+        ...payload,
+        initStock: skuForm.initStock ?? 0,
+      })
+      ElMessage.success('SKU 已创建')
+    }
+    skuDialogVisible.value = false
     await loadSkus()
   } finally {
     saving.value = false

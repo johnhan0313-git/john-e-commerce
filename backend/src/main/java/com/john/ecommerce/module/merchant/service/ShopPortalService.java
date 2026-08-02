@@ -51,6 +51,14 @@ public class ShopPortalService {
         return productService.create(dto);
     }
 
+    public SpuVO updateProduct(Long spuId, SpuCreateDTO dto) {
+        Spu spu = requireOwnedSpu(spuId);
+        // 门户不允许改归属
+        dto.setShopId(spu.getShopId());
+        dto.setMerchantId(spu.getMerchantId());
+        return productService.update(spuId, dto);
+    }
+
     public void updateProductStatus(Long spuId, Integer status) {
         Spu spu = requireOwnedSpu(spuId);
         productService.updateStatus(spu.getId(), status);
@@ -65,6 +73,14 @@ public class ShopPortalService {
         requireOwnedSpu(spuId);
         dto.setSpuId(spuId);
         return skuService.create(dto);
+    }
+
+    public SkuVO updateSku(Long skuId, SkuCreateDTO dto) {
+        Sku sku = skuMapper.selectById(skuId);
+        if (sku == null) throw new BizException("SKU不存在");
+        requireOwnedSpu(sku.getSpuId());
+        dto.setSpuId(sku.getSpuId());
+        return skuService.update(skuId, dto);
     }
 
     public void deleteSku(Long skuId) {

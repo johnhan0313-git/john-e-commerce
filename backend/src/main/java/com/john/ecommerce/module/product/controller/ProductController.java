@@ -24,6 +24,11 @@ public class ProductController {
         return R.ok(productService.create(dto));
     }
 
+    @PutMapping("/{id}")
+    public R<SpuVO> update(@PathVariable Long id, @Valid @RequestBody SpuCreateDTO dto) {
+        return R.ok(productService.update(id, dto));
+    }
+
     @GetMapping("/{id}")
     public R<SpuVO> getById(@PathVariable Long id) {
         return R.ok(productService.getById(id));
