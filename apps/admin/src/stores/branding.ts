@@ -3,7 +3,8 @@ import { defineStore } from 'pinia'
 import client from '@/api/client'
 import type { R, TenantBranding } from '@/types'
 
-const DEFAULT_NAME = 'John Mall'
+const DEFAULT_NAME = 'John Admin'
+const TITLE_SUFFIX = '运营后台'
 
 export function applyDocumentMeta(title: string, favicon?: string | null) {
   document.title = title
@@ -26,7 +27,6 @@ export function applyDocumentMeta(title: string, favicon?: string | null) {
   else if (lower.includes('.png')) link.type = 'image/png'
   else if (lower.includes('.ico')) link.type = 'image/x-icon'
   else link.type = 'image/jpeg'
-  // cache-bust so更换 favicon 后标签页立即刷新
   const sep = favicon.includes('?') ? '&' : '?'
   link.href = `${favicon}${sep}v=${Date.now()}`
 }
@@ -40,24 +40,33 @@ export const useBrandingStore = defineStore('branding', () => {
   )
   const logo = computed(() => data.value?.logo || '')
   const favicon = computed(() => data.value?.favicon || '')
+  const documentTitle = computed(() => `${displayName.value} · ${TITLE_SUFFIX}`)
+  const markLetter = computed(() => (displayName.value.charAt(0) || 'J').toUpperCase())
 
   function apply() {
-    applyDocumentMeta(displayName.value, data.value?.favicon)
+    applyDocumentMeta(documentTitle.value, data.value?.favicon)
+  }
+
+  function setFrom(payload: TenantBranding | null | undefined) {
+    data.value = payload ?? null
+    loaded.value = true
+    apply()
   }
 
   async function fetch() {
+    const token = localStorage.getItem('admin_token')
     try {
-      const res = (await client.get('/public/tenant/branding')) as R<TenantBranding>
-      data.value = res.data ?? null
-      apply()
+      const res = token
+        ? ((await client.get('/tenant/branding')) as R<TenantBranding>)
+        : ((await client.get('/public/tenant/branding')) as R<TenantBranding>)
+      setFrom(res.data)
     } catch {
       data.value = null
-      applyDocumentMeta(DEFAULT_NAME, null)
-    } finally {
+      applyDocumentMeta(`${DEFAULT_NAME} · ${TITLE_SUFFIX}`, null)
       loaded.value = true
     }
     return data.value
   }
 
-  return { data, loaded, displayName, logo, favicon, fetch, apply }
+  return { data, loaded, displayName, logo, favicon, documentTitle, markLetter, fetch, apply, setFrom }
 })

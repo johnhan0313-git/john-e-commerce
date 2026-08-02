@@ -62,35 +62,42 @@
     <el-dialog
       v-model="editorVisible"
       :title="form.id ? '编辑商品' : '创建商品'"
-      width="920px"
+      width="780px"
       top="4vh"
+      class="product-editor-dialog"
       destroy-on-close
     >
-      <el-form label-width="90px" v-loading="editorLoading">
+      <el-form class="product-form" label-width="72px" v-loading="editorLoading">
         <div class="section-title">基本信息</div>
-        <el-form-item label="名称" required>
-          <el-input v-model="form.name" placeholder="商品名称" />
-        </el-form-item>
+        <el-row :gutter="16">
+          <el-col :span="14">
+            <el-form-item label="名称" required>
+              <el-input v-model="form.name" placeholder="商品名称" maxlength="80" show-word-limit />
+            </el-form-item>
+          </el-col>
+          <el-col :span="10">
+            <el-form-item label="类目">
+              <el-tree-select
+                v-model="form.categoryId"
+                :data="categoryTree"
+                :props="{ label: 'name', value: 'id', children: 'children' }"
+                check-strictly
+                clearable
+                filterable
+                placeholder="选择类目"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
         <el-form-item label="副标题">
-          <el-input v-model="form.subtitle" />
-        </el-form-item>
-        <el-form-item label="类目">
-          <el-tree-select
-            v-model="form.categoryId"
-            :data="categoryTree"
-            :props="{ label: 'name', value: 'id', children: 'children' }"
-            check-strictly
-            clearable
-            filterable
-            placeholder="选择类目"
-            style="width: 100%"
-          />
+          <el-input v-model="form.subtitle" placeholder="一句话卖点" maxlength="120" show-word-limit />
         </el-form-item>
         <el-form-item label="主图">
           <ImageUpload v-model="form.imageUrl" folder="product" :aspect-ratio="1" hint="上传主图" />
         </el-form-item>
-        <el-form-item label="详情">
-          <el-input v-model="form.detail" type="textarea" :rows="2" />
+        <el-form-item label="详情" class="detail-item">
+          <RichTextEditor v-model="form.detail" folder="product" :height="240" />
         </el-form-item>
 
         <div class="section-title">
@@ -102,7 +109,7 @@
             <el-input
               v-model="attr.name"
               placeholder="规格名，如 颜色"
-              style="width: 140px"
+              class="spec-name"
               @change="regenSkus"
             />
             <el-select
@@ -112,7 +119,7 @@
               allow-create
               default-first-option
               placeholder="回车添加规格值"
-              style="flex: 1"
+              class="spec-values"
               @change="regenSkus"
             />
             <el-button link type="danger" @click="removeAttr(idx)">删除</el-button>
@@ -130,7 +137,7 @@
           <el-input-number v-model="batchStock" :min="0" :step="1" />
           <el-button size="small" @click="applyBatchStock">统一库存</el-button>
         </div>
-        <el-table :data="form.skus" size="small" max-height="320" border>
+        <el-table :data="form.skus" size="small" max-height="280" border>
           <el-table-column
             v-for="attr in activeAttrNames"
             :key="attr"
@@ -187,6 +194,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import client from '@/api/client'
 import ImageUpload from '@/components/ImageUpload.vue'
+import RichTextEditor from '@/components/RichTextEditor.vue'
 import type { Category, PageResult, R, SalesAttr as SalesAttrType, Sku, Spu } from '@/types'
 
 interface SalesAttr {
@@ -215,12 +223,12 @@ const editorVisible = ref(false)
 const editorLoading = ref(false)
 
 const form = reactive({
-  id: null as number | null,
+  id: null as number | string | null,
   name: '',
   subtitle: '',
   imageUrl: '',
   detail: '',
-  categoryId: null as number | null,
+  categoryId: null as number | string | null,
   salesAttrs: [] as SalesAttr[],
   skus: [] as SkuDraft[],
 })
@@ -389,12 +397,12 @@ async function openEdit(row: Spu) {
           }))
         : attrsFromSkus(skuList)
     Object.assign(form, {
-      id: Number(spu.id),
+      id: spu.id,
       name: spu.name || '',
       subtitle: spu.subtitle || '',
       imageUrl: spu.mainImages?.[0] || '',
       detail: spu.detail || '',
-      categoryId: spu.categoryId != null ? Number(spu.categoryId) : null,
+      categoryId: spu.categoryId != null ? String(spu.categoryId) : null,
       salesAttrs: salesAttrs.length ? salesAttrs : [{ name: '颜色', values: [] }],
       skus: skuList.map((s) => ({
         id: s.id,
@@ -427,7 +435,7 @@ function buildPayload() {
     mainImages: form.imageUrl ? [form.imageUrl] : [],
     salesAttrs,
     skus: form.skus.map((s) => ({
-      id: s.id ? Number(s.id) : undefined,
+      id: s.id || undefined,
       skuName: s.skuName.trim() || buildSkuName(form.name.trim(), s.specValues),
       skuCode: s.skuCode || undefined,
       price: s.price,
@@ -484,10 +492,13 @@ onMounted(load)
 </script>
 
 <style scoped>
+.product-form {
+  max-width: 720px;
+}
 .section-title {
   font-size: 14px;
   font-weight: 600;
-  margin: 8px 0 12px;
+  margin: 4px 0 12px;
   display: flex;
   align-items: baseline;
   gap: 10px;
@@ -497,23 +508,35 @@ onMounted(load)
   font-weight: 400;
   color: var(--el-text-color-secondary);
 }
+.detail-item :deep(.el-form-item__content) {
+  line-height: normal;
+}
 .spec-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
   margin-bottom: 16px;
-  padding: 0 0 0 90px;
+  padding: 0 0 0 72px;
 }
 .spec-row {
   display: flex;
   align-items: center;
   gap: 10px;
 }
+.spec-name {
+  width: 120px;
+  flex-shrink: 0;
+}
+.spec-values {
+  flex: 1;
+  min-width: 0;
+  max-width: 420px;
+}
 .sku-batch {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 0 12px 90px;
+  margin: 0 0 12px 72px;
   flex-wrap: wrap;
 }
 </style>

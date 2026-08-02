@@ -69,8 +69,8 @@ const visible = ref(false)
 const saving = ref(false)
 const parentLabel = ref('')
 const form = reactive({
-  id: null as number | null,
-  parentId: 0 as number,
+  id: '' as string | number | '',
+  parentId: '' as string | number | '',
   name: '',
   sortOrder: 0,
 })
@@ -86,8 +86,9 @@ async function load() {
 }
 
 function openCreate(parent: Category | null) {
-  form.id = null
-  form.parentId = parent ? Number(parent.id) : 0
+  form.id = ''
+  // 雪花 ID 超过 JS 安全整数，禁止 Number()，保持字符串
+  form.parentId = parent ? String(parent.id) : ''
   form.name = ''
   form.sortOrder = 0
   parentLabel.value = parent ? parent.name : ''
@@ -95,8 +96,8 @@ function openCreate(parent: Category | null) {
 }
 
 function openEdit(row: Category) {
-  form.id = Number(row.id)
-  form.parentId = Number(row.parentId || 0)
+  form.id = String(row.id)
+  form.parentId = row.parentId != null && String(row.parentId) !== '0' ? String(row.parentId) : ''
   form.name = row.name || ''
   form.sortOrder = row.sortOrder ?? 0
   parentLabel.value = ''
@@ -112,7 +113,7 @@ async function save() {
   try {
     const payload = {
       name: form.name.trim(),
-      parentId: form.parentId || 0,
+      parentId: form.parentId ? form.parentId : 0,
       sortOrder: form.sortOrder ?? 0,
     }
     if (form.id) {

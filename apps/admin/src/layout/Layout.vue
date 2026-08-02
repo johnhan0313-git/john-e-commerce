@@ -2,9 +2,10 @@
   <el-container class="layout">
     <el-aside :width="asideWidth" class="aside">
       <div class="brand">
-        <span class="brand-mark">J</span>
+        <img v-if="branding.logo" :src="branding.logo" alt="" class="brand-logo" />
+        <span v-else class="brand-mark">{{ branding.markLetter }}</span>
         <div class="brand-text">
-          <strong>John Admin</strong>
+          <strong>{{ branding.displayName }}</strong>
           <span>运营控制台</span>
         </div>
       </div>
@@ -71,11 +72,13 @@ import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Brush, Goods, List, Menu, Odometer, SetUp, Shop, UserFilled, Wallet } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
+import { useBrandingStore } from '@/stores/branding'
 import { useModulesStore } from '@/stores/modules'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const branding = useBrandingStore()
 const modules = useModulesStore()
 
 const active = computed(() => route.path)
@@ -83,6 +86,7 @@ const asideWidth = '232px'
 
 onMounted(() => {
   modules.fetch()
+  if (!branding.loaded) branding.fetch()
 })
 
 function logout() {
@@ -124,6 +128,16 @@ function logout() {
   color: #fff;
   background: linear-gradient(135deg, #0ea5e9, #0369a1);
   box-shadow: 0 4px 12px rgba(14, 165, 233, 0.35);
+  flex-shrink: 0;
+}
+
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #fff;
+  flex-shrink: 0;
 }
 
 .brand-text {

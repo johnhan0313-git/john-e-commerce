@@ -56,7 +56,7 @@
 
       <div v-if="spu.detail" class="desc card">
         <h3>详情</h3>
-        <p>{{ spu.detail }}</p>
+        <div class="rich-html" v-html="renderedDetail" />
       </div>
     </div>
   </section>
@@ -86,6 +86,16 @@ const selectedSku = computed(() => skus.value.find((s) => s.id === selectedSkuId
 const displayPrice = computed(() => selectedSku.value?.price ?? skus.value[0]?.price ?? '—')
 const cover = computed(() => spu.value?.mainImages?.[0])
 const shopMark = computed(() => (shop.value?.name?.trim().charAt(0) || '店').toUpperCase())
+const renderedDetail = computed(() => {
+  const d = spu.value?.detail?.trim() || ''
+  if (!d) return ''
+  if (/<[a-z][\s\S]*>/i.test(d)) return d
+  return d
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>')
+})
 
 onMounted(async () => {
   const id = route.params.id
@@ -247,6 +257,28 @@ async function addToCart() {
 
 .desc {
   padding: var(--space-4);
+}
+
+.rich-html {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--color-text, #333);
+  word-break: break-word;
+}
+
+.rich-html :deep(img) {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 12px 0;
+}
+
+.rich-html :deep(p) {
+  margin: 0 0 0.75em;
+}
+
+.rich-html :deep(p:last-child) {
+  margin-bottom: 0;
 }
 
 @media (max-width: 800px) {

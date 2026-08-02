@@ -89,3 +89,12 @@ export interface Order {
   merchantId?: number | string
   items?: Array<{ id: number | string; skuName: string; quantity: number; price: number }>
 }
+
+export interface TenantBranding {
+  tenantId?: number | string
+  name?: string
+  slug?: string
+  displayName?: string
+  logo?: string
+  favicon?: string
+}

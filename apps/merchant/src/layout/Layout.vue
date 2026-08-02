@@ -11,7 +11,7 @@
         <span v-else class="brand-mark">{{ brandMark }}</span>
         <div class="brand-text">
           <strong>{{ brandTitle }}</strong>
-          <span>卖家工作台</span>
+          <span>{{ branding.displayName }}</span>
         </div>
       </div>
       <el-menu :default-active="active" router class="side-menu">
@@ -75,11 +75,13 @@ import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Document, Goods, List, Odometer } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
+import { useBrandingStore } from '@/stores/branding'
 import { useMerchantStore } from '@/stores/merchant'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const branding = useBrandingStore()
 const merchant = useMerchantStore()
 
 const active = computed(() => route.path)
@@ -91,12 +93,13 @@ const activeShopId = computed(() => merchant.activeShopId)
 const viewKey = computed(() => `${route.path}::${activeShopId.value ?? 'none'}`)
 const asideWidth = '232px'
 
-const merchantLogo = computed(() => merchant.me?.merchant?.logo || '')
-const brandTitle = computed(() => merchant.me?.merchant?.name?.trim() || 'John Merchant')
+const merchantLogo = computed(() => merchant.me?.merchant?.logo || branding.logo || '')
+const brandTitle = computed(() => merchant.me?.merchant?.name?.trim() || branding.displayName)
 const brandMark = computed(() => (brandTitle.value.charAt(0) || 'M').toUpperCase())
 
 onMounted(() => {
   if (auth.isLoggedIn && !merchant.loaded) merchant.fetchMe()
+  if (!branding.loaded) branding.fetch()
 })
 
 function onShopChange(id: string | number) {

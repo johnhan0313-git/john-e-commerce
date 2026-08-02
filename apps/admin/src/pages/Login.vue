@@ -3,8 +3,9 @@
     <aside class="brand-panel">
       <div class="brand-panel-inner">
         <div class="logo-row">
-          <span class="mark">J</span>
-          <span class="name">John Admin</span>
+          <img v-if="branding.logo" :src="branding.logo" alt="" class="logo-img" />
+          <span v-else class="mark">{{ branding.markLetter }}</span>
+          <span class="name">{{ branding.displayName }}</span>
         </div>
         <h1>租户运营<br />一站掌控</h1>
         <p>卖家审核、商品订单、模块开通 —— 多业态电商后台</p>
@@ -49,6 +50,7 @@ import { onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
+import { useBrandingStore } from '@/stores/branding'
 import { useModulesStore } from '@/stores/modules'
 
 const email = ref('johnhan0313@gmail.com')
@@ -60,8 +62,11 @@ const cooldown = ref(0)
 let timer: number | undefined
 
 const auth = useAuthStore()
+const branding = useBrandingStore()
 const modules = useModulesStore()
 const router = useRouter()
+
+if (!branding.loaded) branding.fetch()
 
 async function sendCode() {
   err.value = ''
@@ -148,6 +153,14 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #0ea5e9, #0369a1);
   color: #fff;
   box-shadow: 0 8px 24px rgba(14, 165, 233, 0.4);
+}
+
+.logo-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: #fff;
 }
 
 .name {

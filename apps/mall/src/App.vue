@@ -42,7 +42,7 @@ const modules = useModulesStore()
 const router = useRouter()
 
 onMounted(() => {
-  branding.fetch()
+  if (!branding.loaded) branding.fetch()
 })
 
 if (auth.isLoggedIn) {

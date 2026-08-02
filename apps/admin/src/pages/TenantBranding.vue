@@ -3,7 +3,7 @@
     <div class="page-header">
       <div>
         <h2>商城品牌</h2>
-        <p class="desc">配置 mall 端顶栏 Logo、展示名称与 favicon（写入当前租户 config）</p>
+        <p class="desc">配置展示名称、Logo 与 favicon；mall / admin / merchant 三端标签页与顶栏同步</p>
       </div>
       <el-button type="primary" :loading="saving" @click="save">保存</el-button>
     </div>
@@ -50,8 +50,10 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import ImageUpload from '@/components/ImageUpload.vue'
 import client from '@/api/client'
+import { useBrandingStore } from '@/stores/branding'
 import type { R, TenantBranding } from '@/types'
 
+const branding = useBrandingStore()
 const loading = ref(false)
 const saving = ref(false)
 const meta = reactive({ name: '', slug: '' })
@@ -76,6 +78,7 @@ async function load() {
     form.displayName = d?.displayName || ''
     form.logo = d?.logo || ''
     form.favicon = d?.favicon || ''
+    branding.setFrom(d)
   } finally {
     loading.value = false
   }
@@ -93,7 +96,8 @@ async function save() {
     form.displayName = d?.displayName || ''
     form.logo = d?.logo || ''
     form.favicon = d?.favicon || ''
-    ElMessage.success('商城品牌已保存')
+    branding.setFrom(d)
+    ElMessage.success('品牌已保存，三端标签页将同步更新')
   } finally {
     saving.value = false
   }
