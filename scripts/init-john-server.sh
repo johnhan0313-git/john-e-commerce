@@ -40,12 +40,18 @@ psql_cmd "SELECT 1 FROM pg_database WHERE datname = '\${DB_NAME_TEST}'" | grep -
 echo "PostgreSQL user + databases ready."
 REMOTE
 
-echo "==> Applying SQL migrations to ${DB_NAME}..."
-for f in "$ROOT"/scripts/sql/V*.sql; do
-  echo "  -> $(basename "$f")"
-  # 通过 stdin 喂给容器内 psql，避免 scp
-  ssh "${HOST}" "docker exec -i ${PG_CONTAINER} psql -U ${DB_USER} -d ${DB_NAME} -v ON_ERROR_STOP=1" <"$f"
-done
+apply_migrations() {
+  local db="$1"
+  echo "==> Applying SQL migrations to ${db}..."
+  for f in "$ROOT"/scripts/sql/V*.sql; do
+    echo "  -> ${db}: $(basename "$f")"
+    # 通过 stdin 喂给容器内 psql，避免 scp
+    ssh "${HOST}" "docker exec -i ${PG_CONTAINER} psql -U ${DB_USER} -d ${db} -v ON_ERROR_STOP=1" <"$f"
+  done
+}
+
+apply_migrations "${DB_NAME}"
+apply_migrations "${DB_NAME_TEST}"
 
 echo "==> Done."
 echo "    DB:       ${DB_NAME} / ${DB_NAME_TEST}"

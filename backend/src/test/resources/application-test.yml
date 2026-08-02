@@ -8,9 +8,9 @@ spring:
   jackson:
     default-property-inclusion: non_null
 
-# Defaults when Docker/Testcontainers unavailable — local john-server ports
+# Defaults when Docker/Testcontainers unavailable — SSH tunnel → john-server PG
   datasource:
-    url: jdbc:postgresql://127.0.0.1:15432/john-ecommerce
+    url: jdbc:postgresql://127.0.0.1:15432/john-ecommerce-test
     username: john-ecommerce
     password: john-ecommerce-123
     driver-class-name: org.postgresql.Driver

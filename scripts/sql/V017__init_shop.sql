@@ -39,4 +39,4 @@ VALUES
 (2018, 1, 'fulfillment', 1, 0, 0, 0),
 (2019, 1, 'settle', 1, 0, 0, 0),
 (2020, 1, 'ledger', 1, 0, 0, 0)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (tenant_id, module_code) WHERE delete_flag = 0 DO NOTHING;

@@ -1,0 +1,10 @@
+---
+description: 本地开发 / IT 测试与 schema 变更约定（john-server）
+alwaysApply: true
+---
+
+# 开发与测试运维约定
+
+1. **Docker 在 john-server**：本机一般没有 Docker。跑需要容器的能力（含 Testcontainers 回落场景）时，连 john-server 上的 Docker / 已暴露服务；本地经 `run.sh` SSH 隧道访问：`127.0.0.1:15432`（PG）、`16379`（Redis）、`19000`（MinIO）。
+2. **无历史包袱**：系统尚未上线。改动按正确模型直接改（SQL / API / 前端可破坏性调整），不要为兼容旧数据或旧字段写冗余迁移分支、双写或长期 deprecated 路径。一次性脚本可做成幂等以便重灌测试库。
+3. **库表变更落测试库**：涉及 schema 时，追加 `scripts/sql/V0xx__….sql` 后，在 john-server 的 **`john-ecommerce-test`** 上执行并验证；`application-test.yml` 指向该库（勿默认打业务库 `john-ecommerce`）。需要时同步业务库，但测试以 test 库为准。
