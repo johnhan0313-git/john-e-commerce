@@ -17,5 +17,7 @@ public class SkuVO {
     private BigDecimal weight;
     private String barcode;
     private Integer status;
+    /** 默认仓可售库存 */
+    private Integer available;
     private Long createdAt;
 }

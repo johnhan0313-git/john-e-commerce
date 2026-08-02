@@ -11,12 +11,18 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Real inventory implementation replacing NoOpInventoryFacade.
  * FEFO/FIFO allocation from StockLot; DEFAULT lot for non-lot-enabled SKUs.
  */
+@Slf4j
 @Service
 @Primary
 @RequiredArgsConstructor
@@ -61,7 +67,7 @@ public class InventoryService implements InventoryFacade {
                 detail.setLotId(lot.getId());
                 detail.setLotNo(lot.getLotNo());
                 detail.setQty(alloc);
-                detail.setStatus(1);
+                detail.setStatus(LOCK_STATUS_LOCKED);
                 stockLockDetailMapper.insert(detail);
 
                 writeLog(warehouseId, item.getSkuId(), lot.getLotNo(), "LOCK", -alloc,
@@ -95,22 +101,106 @@ public class InventoryService implements InventoryFacade {
 
     @Override
     @Transactional
+    public void initOrSetAvailable(Long warehouseId, Long skuId, int qty) {
+        if (warehouseId == null || skuId == null) return;
+        if (qty < 0) throw new BizException("初始库存不能为负");
+        StockLot lot = ensureDefaultLot(warehouseId, skuId);
+        int before = lot.getAvailable() != null ? lot.getAvailable() : 0;
+        int locked = lot.getLocked() != null ? lot.getLocked() : 0;
+        if (locked > 0 && qty < before) {
+            throw new BizException("存在锁定库存，无法下调可售");
+        }
+        if (before == qty) {
+            updateSummary(warehouseId, skuId);
+            return;
+        }
+        lot.setAvailable(qty);
+        stockLotMapper.updateById(lot);
+        int delta = qty - before;
+        writeLog(warehouseId, skuId, lot.getLotNo(), delta >= 0 ? "IN" : "ADJUST", delta,
+                before, qty, "SKU_INIT", skuId, "initOrSetAvailable");
+        updateSummary(warehouseId, skuId);
+    }
+
+    @Override
+    public int getAvailable(Long warehouseId, Long skuId) {
+        if (warehouseId == null || skuId == null) return 0;
+        WarehouseStock ws = warehouseStockMapper.selectOne(new LambdaQueryWrapper<WarehouseStock>()
+                .eq(WarehouseStock::getWarehouseId, warehouseId)
+                .eq(WarehouseStock::getSkuId, skuId));
+        return ws != null && ws.getAvailable() != null ? ws.getAvailable() : 0;
+    }
+
+    @Override
+    public Map<Long, Integer> getAvailableBatch(Long warehouseId, Collection<Long> skuIds) {
+        Map<Long, Integer> result = new HashMap<>();
+        if (warehouseId == null || skuIds == null || skuIds.isEmpty()) return result;
+        List<WarehouseStock> list = warehouseStockMapper.selectList(new LambdaQueryWrapper<WarehouseStock>()
+                .eq(WarehouseStock::getWarehouseId, warehouseId)
+                .in(WarehouseStock::getSkuId, skuIds));
+        for (WarehouseStock ws : list) {
+            result.put(ws.getSkuId(), ws.getAvailable() != null ? ws.getAvailable() : 0);
+        }
+        for (Long skuId : skuIds) {
+            result.putIfAbsent(skuId, 0);
+        }
+        return result;
+    }
+
+    @Override
+    @Transactional
     public void unlockForOrder(Order order) {
         List<StockLockDetail> details = stockLockDetailMapper.selectList(
                 new LambdaQueryWrapper<StockLockDetail>()
                         .eq(StockLockDetail::getOrderId, order.getId())
-                        .eq(StockLockDetail::getStatus, 1));
+                        .eq(StockLockDetail::getStatus, LOCK_STATUS_LOCKED));
         for (StockLockDetail d : details) {
             StockLot lot = stockLotMapper.selectById(d.getLotId());
             if (lot != null) {
                 int before = lot.getAvailable();
                 lot.setAvailable(lot.getAvailable() + d.getQty());
-                lot.setLocked(lot.getLocked() - d.getQty());
+                lot.setLocked(Math.max(0, lot.getLocked() - d.getQty()));
                 stockLotMapper.updateById(lot);
                 writeLog(d.getWarehouseId(), d.getSkuId(), d.getLotNo(), "UNLOCK", d.getQty(),
                         before, lot.getAvailable(), "ORDER", order.getId(), null);
             }
-            d.setStatus(0);
+            d.setStatus(LOCK_STATUS_RELEASED);
+            stockLockDetailMapper.updateById(d);
+            updateSummary(d.getWarehouseId(), d.getSkuId());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void consumeForOrder(Order order) {
+        if (order == null || order.getId() == null) return;
+        List<StockLockDetail> details = stockLockDetailMapper.selectList(
+                new LambdaQueryWrapper<StockLockDetail>()
+                        .eq(StockLockDetail::getOrderId, order.getId())
+                        .eq(StockLockDetail::getStatus, LOCK_STATUS_LOCKED));
+        if (details.isEmpty()) {
+            log.warn("consumeForOrder: no locked details for orderId={}", order.getId());
+            return;
+        }
+        for (StockLockDetail d : details) {
+            StockLot lot = stockLotMapper.selectById(d.getLotId());
+            if (lot == null) {
+                log.warn("consumeForOrder: lot missing lotId={} orderId={}", d.getLotId(), order.getId());
+                d.setStatus(LOCK_STATUS_CONSUMED);
+                stockLockDetailMapper.updateById(d);
+                continue;
+            }
+            int beforeLocked = lot.getLocked() != null ? lot.getLocked() : 0;
+            int qty = d.getQty() != null ? d.getQty() : 0;
+            if (beforeLocked < qty) {
+                throw new BizException("锁定库存不足，无法扣减: lotNo=" + lot.getLotNo());
+            }
+            lot.setLocked(beforeLocked - qty);
+            stockLotMapper.updateById(lot);
+            // before/after 记录 locked 口径，便于对账
+            writeLog(d.getWarehouseId(), d.getSkuId(), d.getLotNo(), "CONSUME", -qty,
+                    beforeLocked, lot.getLocked(), "ORDER", order.getId(), null);
+            d.setStatus(LOCK_STATUS_CONSUMED);
             stockLockDetailMapper.updateById(d);
             updateSummary(d.getWarehouseId(), d.getSkuId());
         }

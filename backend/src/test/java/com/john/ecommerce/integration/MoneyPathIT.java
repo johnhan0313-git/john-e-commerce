@@ -11,6 +11,7 @@ import com.john.ecommerce.module.payment.enums.PaymentStatus;
 import com.john.ecommerce.module.payment.mapper.SettlementOrderMapper;
 import com.john.ecommerce.module.trade.entity.Order;
 import com.john.ecommerce.module.trade.mapper.OrderMapper;
+import com.john.ecommerce.module.trade.service.OrderService;
 import com.john.ecommerce.support.AbstractIntegrationTest;
 import com.john.ecommerce.support.TestAuthHelper;
 import com.john.ecommerce.support.TestDataSeeder;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -30,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Golden path: stock → order (lock) → MOCK pay/callback → settlement; cancel unlocks stock.
+ * Golden path: stock → order (lock) → MOCK pay/callback → consume; cancel / timeout unlocks.
  */
 class MoneyPathIT extends AbstractIntegrationTest {
 
@@ -38,7 +40,9 @@ class MoneyPathIT extends AbstractIntegrationTest {
     @Autowired ObjectMapper objectMapper;
     @Autowired TestDataSeeder seeder;
     @Autowired OrderMapper orderMapper;
+    @Autowired OrderService orderService;
     @Autowired SettlementOrderMapper settlementOrderMapper;
+    @Autowired JdbcTemplate jdbcTemplate;
 
     String bearer;
 
@@ -70,12 +74,17 @@ class MoneyPathIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
 
+        // 支付成功扣减锁定库存：available 不变，locked 归零
+        assertThat(seeder.lockedQty(catalog.skuId())).isZero();
+        assertThat(seeder.availableQty(catalog.skuId())).isEqualTo(8);
+
         TenantContext.setTenantId(TestDataSeeder.TENANT_ID);
         try {
             Order order = orderMapper.selectById(orderId);
             assertThat(order.getPayStatus()).isEqualTo(PayStatus.PAID.getCode());
             assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID.getCode());
             assertThat(order.getPaidAmount()).isEqualByComparingTo(payAmount);
+            assertThat(order.getPayDeadline()).isNotNull();
 
             SettlementOrder so = settlementOrderMapper.selectOne(new LambdaQueryWrapper<SettlementOrder>()
                     .eq(SettlementOrder::getOrderId, orderId)
@@ -87,6 +96,33 @@ class MoneyPathIT extends AbstractIntegrationTest {
         } finally {
             TenantContext.clear();
         }
+    }
+
+    @Test
+    void unpaidTimeoutCancelsAndUnlocksStock() throws Exception {
+        TestDataSeeder.Catalog catalog = seeder.seedCatalogWithStock(10);
+        JsonNode orderGroup = createOrder(catalog.skuId(), 2);
+        Long orderId = orderGroup.path("orders").get(0).path("id").asLong();
+        assertThat(seeder.lockedQty(catalog.skuId())).isEqualTo(2);
+
+        // 将支付截止时间拨到过去，触发超时关单
+        jdbcTemplate.update(
+                "UPDATE t_order SET pay_deadline = ? WHERE id = ?",
+                System.currentTimeMillis() - 1000L, orderId);
+
+        TenantContext.setTenantId(TestDataSeeder.TENANT_ID);
+        try {
+            int n = orderService.cancelExpiredUnpaidOrders(50);
+            assertThat(n).isGreaterThanOrEqualTo(1);
+            Order order = orderMapper.selectById(orderId);
+            assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED.getCode());
+            assertThat(order.getCancelReason()).isEqualTo("PAY_TIMEOUT");
+        } finally {
+            TenantContext.clear();
+        }
+
+        assertThat(seeder.lockedQty(catalog.skuId())).isZero();
+        assertThat(seeder.availableQty(catalog.skuId())).isEqualTo(10);
     }
 
     @Test

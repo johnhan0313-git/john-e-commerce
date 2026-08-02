@@ -47,6 +47,7 @@ export interface Sku {
   price: number
   costPrice?: number
   status?: number
+  available?: number
 }
 
 export interface Order {

@@ -46,3 +46,6 @@ app:
     public-base-url: http://127.0.0.1:19000
   cors:
     origins: http://localhost:3022,http://localhost:3021,http://localhost:3023
+  trade:
+    pay-timeout-ms: 1800000
+    unpaid-cancel-delay-ms: 3600000

@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,7 +22,6 @@ public class SkuService {
 
     /** 与 OrderSplitter 默认仓一致 */
     private static final long DEFAULT_WAREHOUSE_ID = 0L;
-    private static final int DEFAULT_INIT_STOCK = 999;
 
     private final SkuMapper skuMapper;
     private final SpuMapper spuMapper;
@@ -40,8 +41,8 @@ public class SkuService {
         sku.setBarcode(dto.getBarcode());
         sku.setStatus(dto.getStatus() != null ? dto.getStatus() : 1);
         skuMapper.insert(sku);
-        // 新建 SKU 默认补可售库存，避免商城下单因空仓失败（正式环境应走入库单）
-        inventoryFacade.ensureStock(DEFAULT_WAREHOUSE_ID, sku.getId(), DEFAULT_INIT_STOCK);
+        int initStock = dto.getInitStock() != null ? dto.getInitStock() : 0;
+        inventoryFacade.initOrSetAvailable(DEFAULT_WAREHOUSE_ID, sku.getId(), initStock);
         return toVO(sku);
     }
 
@@ -65,10 +66,13 @@ public class SkuService {
     }
 
     public List<SkuVO> listBySpu(Long spuId) {
-        return skuMapper.selectList(new LambdaQueryWrapper<Sku>()
-                        .eq(Sku::getSpuId, spuId)
-                        .orderByAsc(Sku::getId))
-                .stream().map(this::toVO).toList();
+        List<Sku> skus = skuMapper.selectList(new LambdaQueryWrapper<Sku>()
+                .eq(Sku::getSpuId, spuId)
+                .orderByAsc(Sku::getId));
+        Map<Long, Integer> avail = inventoryFacade.getAvailableBatch(
+                DEFAULT_WAREHOUSE_ID,
+                skus.stream().map(Sku::getId).collect(Collectors.toList()));
+        return skus.stream().map(s -> toVO(s, avail.getOrDefault(s.getId(), 0))).toList();
     }
 
     public void delete(Long id) {
@@ -89,6 +93,10 @@ public class SkuService {
     }
 
     private SkuVO toVO(Sku s) {
+        return toVO(s, inventoryFacade.getAvailable(DEFAULT_WAREHOUSE_ID, s.getId()));
+    }
+
+    private SkuVO toVO(Sku s, int available) {
         SkuVO vo = new SkuVO();
         vo.setId(s.getId());
         vo.setSpuId(s.getSpuId());
@@ -101,6 +109,7 @@ public class SkuService {
         vo.setWeight(s.getWeight());
         vo.setBarcode(s.getBarcode());
         vo.setStatus(s.getStatus());
+        vo.setAvailable(available);
         vo.setCreatedAt(s.getCreatedAt());
         return vo;
     }

@@ -22,4 +22,14 @@ public class NoOpInventoryFacade implements InventoryFacade {
     public void unlockForOrder(Order order) {
         log.debug("NoOp unlockForOrder orderNo={}", order.getOrderNo());
     }
+
+    @Override
+    public void consumeForOrder(Order order) {
+        log.debug("NoOp consumeForOrder orderNo={}", order.getOrderNo());
+    }
+
+    @Override
+    public void initOrSetAvailable(Long warehouseId, Long skuId, int qty) {
+        log.debug("NoOp initOrSetAvailable warehouseId={} skuId={} qty={}", warehouseId, skuId, qty);
+    }
 }

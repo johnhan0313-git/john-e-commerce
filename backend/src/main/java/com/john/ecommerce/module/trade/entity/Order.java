@@ -41,6 +41,7 @@ public class Order extends BaseEntity {
     @TableField(exist = false)
     private Long campaignId;
     private Long distributorId;
+    private Long payDeadline;
     private Long cancelTime;
     private String cancelReason;
     private Long cancelBy;

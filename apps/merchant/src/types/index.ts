@@ -53,6 +53,7 @@ export interface Sku {
   skuName: string
   price: number
   status: number
+  available?: number
 }
 
 export interface Order {

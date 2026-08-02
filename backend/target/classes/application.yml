@@ -77,6 +77,9 @@ app:
     public-base-url: ${MINIO_PUBLIC_BASE_URL:http://127.0.0.1:19000}
   cors:
     origins: ${CORS_ORIGINS:http://localhost:3022,http://localhost:3021,http://localhost:3023}
+  trade:
+    pay-timeout-ms: ${TRADE_PAY_TIMEOUT_MS:1800000}
+    unpaid-cancel-delay-ms: ${TRADE_UNPAID_CANCEL_DELAY_MS:60000}
 
 logging:
   level:

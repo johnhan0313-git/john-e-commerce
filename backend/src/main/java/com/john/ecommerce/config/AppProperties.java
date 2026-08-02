@@ -13,6 +13,7 @@ public class AppProperties {
     private Mail mail = new Mail();
     private Minio minio = new Minio();
     private Cors cors = new Cors();
+    private Trade trade = new Trade();
 
     @Data
     public static class Jwt {
@@ -55,5 +56,13 @@ public class AppProperties {
     @Data
     public static class Cors {
         private String origins = "http://localhost:3022,http://localhost:3021";
+    }
+
+    @Data
+    public static class Trade {
+        /** Unpaid order auto-cancel window (ms). Default 30 minutes. */
+        private long payTimeoutMs = 30L * 60 * 1000;
+        /** Delay between unpaid-cancel job runs (ms). */
+        private long unpaidCancelDelayMs = 60_000L;
     }
 }

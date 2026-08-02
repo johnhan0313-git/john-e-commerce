@@ -16,6 +16,6 @@ public class StockLockDetail extends BaseEntity {
     private Long lotId;
     private String lotNo;
     private Integer qty;
-    /** 1=locked 0=released */
+    /** 0=released 1=locked 2=consumed */
     private Integer status;
 }

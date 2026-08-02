@@ -89,6 +89,7 @@
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="skuName" label="名称" />
         <el-table-column prop="price" label="价格" width="100" />
+        <el-table-column prop="available" label="可售" width="80" />
         <el-table-column prop="status" label="状态" width="80" />
         <el-table-column label="操作" width="80">
           <template #default="{ row }">
@@ -108,6 +109,9 @@
         </el-form-item>
         <el-form-item label="价格" required>
           <el-input-number v-model="skuForm.price" :min="0" :precision="2" :step="1" />
+        </el-form-item>
+        <el-form-item label="初始库存">
+          <el-input-number v-model="skuForm.initStock" :min="0" :step="1" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -151,6 +155,7 @@ const skuForm = reactive({
   skuName: '',
   skuCode: '',
   price: 99,
+  initStock: 0,
 })
 
 function onFilterChange() {
@@ -236,6 +241,7 @@ function openSkuCreate() {
   skuForm.skuName = `${currentSpu.value?.name || 'SKU'}-默认`
   skuForm.skuCode = ''
   skuForm.price = 99
+  skuForm.initStock = 0
   skuCreateVisible.value = true
 }
 
@@ -252,6 +258,7 @@ async function createSku() {
       skuName: skuForm.skuName,
       skuCode: skuForm.skuCode || undefined,
       price: skuForm.price,
+      initStock: skuForm.initStock ?? 0,
       status: 1,
     })
     ElMessage.success('SKU 已创建')

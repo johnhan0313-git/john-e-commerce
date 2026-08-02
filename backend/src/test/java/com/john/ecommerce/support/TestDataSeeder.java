@@ -98,6 +98,7 @@ public class TestDataSeeder {
     public void ensureSchemaPatches() {
         // Idempotent patches for local DBs that may lag scripts/sql
         jdbcTemplate.execute("ALTER TABLE t_order ADD COLUMN IF NOT EXISTS cancel_by BIGINT");
+        jdbcTemplate.execute("ALTER TABLE t_order ADD COLUMN IF NOT EXISTS pay_deadline BIGINT");
         jdbcTemplate.execute("ALTER TABLE t_spu ADD COLUMN IF NOT EXISTS shop_id BIGINT");
         jdbcTemplate.execute("ALTER TABLE t_order ADD COLUMN IF NOT EXISTS shop_id BIGINT");
         jdbcTemplate.execute("ALTER TABLE t_warehouse ADD COLUMN IF NOT EXISTS shop_id BIGINT");

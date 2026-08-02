@@ -32,7 +32,8 @@ public final class SqlScriptLoader {
             "V015__email_login_admin.sql",
             "V016__prod_bootstrap.sql",
             "V017__init_shop.sql",
-            "V018__init_user_identity.sql"
+            "V018__init_user_identity.sql",
+            "V019__order_pay_deadline.sql"
     );
 
     private SqlScriptLoader() {}

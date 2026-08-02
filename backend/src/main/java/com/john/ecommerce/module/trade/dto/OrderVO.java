@@ -26,6 +26,7 @@ public class OrderVO {
     private String payStatusLabel;
     private Integer payType;
     private Long payTime;
+    private Long payDeadline;
     private String receiverName;
     private String receiverPhone;
     private String receiverAddress;

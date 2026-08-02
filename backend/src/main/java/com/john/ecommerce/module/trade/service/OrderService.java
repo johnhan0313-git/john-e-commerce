@@ -6,6 +6,7 @@ import com.john.ecommerce.common.context.UserContext;
 import com.john.ecommerce.common.enums.OrderStatus;
 import com.john.ecommerce.common.enums.PayStatus;
 import com.john.ecommerce.common.exception.BizException;
+import com.john.ecommerce.config.AppProperties;
 import com.john.ecommerce.module.activity.service.engine.PromoContext;
 import com.john.ecommerce.module.activity.service.engine.PromoEngine;
 import com.john.ecommerce.module.activity.service.engine.PromoOrderResult;
@@ -50,6 +51,7 @@ public class OrderService {
     private final OrderStateMachine orderStateMachine;
     private final InventoryFacade inventoryFacade;
     private final ObjectProvider<PromoEngine> promoEngineProvider;
+    private final AppProperties appProperties;
 
     @Transactional
     public OrderGroupVO create(OrderCreateDTO dto) {
@@ -113,6 +115,10 @@ public class OrderService {
             order.setPayAmount(pay);
             order.setPaidAmount(BigDecimal.ZERO);
             order.setPayStatus(PayStatus.UNPAID.getCode());
+            long now = System.currentTimeMillis();
+            long payTimeoutMs = appProperties.getTrade() != null
+                    ? appProperties.getTrade().getPayTimeoutMs() : 30L * 60 * 1000;
+            order.setPayDeadline(now + Math.max(payTimeoutMs, 0));
             order.setReceiverName(dto.getReceiverName());
             order.setReceiverPhone(dto.getReceiverPhone());
             order.setReceiverAddress(dto.getReceiverAddress());
@@ -233,6 +239,46 @@ public class OrderService {
         orderMapper.updateById(order);
     }
 
+    /**
+     * Cancel unpaid orders past pay_deadline and unlock stock. Returns cancelled count.
+     */
+    @Transactional
+    public int cancelExpiredUnpaidOrders(int limit) {
+        long now = System.currentTimeMillis();
+        int batch = Math.min(Math.max(limit, 1), 200);
+        List<Order> expired = orderMapper.selectList(new LambdaQueryWrapper<Order>()
+                .eq(Order::getStatus, OrderStatus.PENDING.getCode())
+                .eq(Order::getPayStatus, PayStatus.UNPAID.getCode())
+                .isNotNull(Order::getPayDeadline)
+                .lt(Order::getPayDeadline, now)
+                .orderByAsc(Order::getPayDeadline)
+                .last("LIMIT " + batch));
+        int cancelled = 0;
+        for (Order candidate : expired) {
+            if (cancelForPayTimeout(candidate.getId())) {
+                cancelled++;
+            }
+        }
+        return cancelled;
+    }
+
+    @Transactional
+    public boolean cancelForPayTimeout(Long id) {
+        Order order = orderMapper.selectById(id);
+        if (order == null) return false;
+        if (order.getStatus() == null || order.getStatus() != OrderStatus.PENDING.getCode()) return false;
+        if (order.getPayStatus() == null || order.getPayStatus() != PayStatus.UNPAID.getCode()) return false;
+        long now = System.currentTimeMillis();
+        if (order.getPayDeadline() == null || order.getPayDeadline() >= now) return false;
+        orderStateMachine.assertTransition(order.getStatus(), OrderStatus.CANCELLED.getCode());
+        inventoryFacade.unlockForOrder(order);
+        order.setCancelTime(now);
+        order.setCancelReason("PAY_TIMEOUT");
+        order.setStatus(OrderStatus.CANCELLED.getCode());
+        orderMapper.updateById(order);
+        return true;
+    }
+
     private PromoOrderResult applyPromo(Long userId, OrderCreateDTO dto) {
         PromoEngine promoEngine = promoEngineProvider.getIfAvailable();
         if (promoEngine == null) {
@@ -343,6 +389,7 @@ public class OrderService {
         vo.setPayStatusLabel(getPayStatusLabel(o.getPayStatus()));
         vo.setPayType(o.getPayType());
         vo.setPayTime(o.getPayTime());
+        vo.setPayDeadline(o.getPayDeadline());
         vo.setReceiverName(o.getReceiverName());
         vo.setReceiverPhone(o.getReceiverPhone());
         vo.setReceiverAddress(o.getReceiverAddress());

@@ -12,11 +12,13 @@ import com.john.ecommerce.module.payment.dto.PaymentCreateDTO;
 import com.john.ecommerce.module.payment.dto.PaymentVO;
 import com.john.ecommerce.module.payment.entity.*;
 import com.john.ecommerce.module.payment.enums.PaymentStatus;
+import com.john.ecommerce.module.fulfillment.service.inventory.InventoryFacade;
 import com.john.ecommerce.module.payment.mapper.PaymentItemMapper;
 import com.john.ecommerce.module.payment.mapper.PaymentMapper;
 import com.john.ecommerce.module.trade.entity.Order;
 import com.john.ecommerce.module.trade.mapper.OrderMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
@@ -34,6 +37,7 @@ public class PaymentService {
     private final List<PayChannel> payChannels;
     private final OrderMapper orderMapper;
     private final SettlementService settlementService;
+    private final InventoryFacade inventoryFacade;
 
     @Transactional
     public PaymentVO createPayment(PaymentCreateDTO dto) {
@@ -104,12 +108,20 @@ public class PaymentService {
                 order.setPayStatus(fullyPaid ? PayStatus.PAID.getCode() : PayStatus.PARTIAL.getCode());
                 order.setPayNo(payment.getPayNo());
                 order.setPayTime(payment.getPaidAt());
-                // 付清且仍为待支付时推进订单状态，便于后续发货等状态机流转
-                if (fullyPaid && order.getStatus() != null
-                        && order.getStatus() == OrderStatus.PENDING.getCode()) {
+                // 付清且仍为待支付：推进已支付并扣减锁定库存；已取消等状态不再 consume
+                boolean shouldConsume = fullyPaid && order.getStatus() != null
+                        && order.getStatus() == OrderStatus.PENDING.getCode();
+                if (shouldConsume) {
                     order.setStatus(OrderStatus.PAID.getCode());
+                } else if (fullyPaid && order.getStatus() != null
+                        && order.getStatus() != OrderStatus.PENDING.getCode()) {
+                    log.warn("支付成功但订单非待支付，跳过库存扣减 orderId={} status={}",
+                            order.getId(), order.getStatus());
                 }
                 orderMapper.updateById(order);
+                if (shouldConsume) {
+                    inventoryFacade.consumeForOrder(order);
+                }
             }
 
             settlementService.createSettlementOrder(payment, item, "FORWARD");
