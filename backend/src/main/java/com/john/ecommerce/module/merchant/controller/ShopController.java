@@ -8,6 +8,7 @@ import com.john.ecommerce.module.fulfillment.dto.LogisticsCreateDTO;
 import com.john.ecommerce.module.fulfillment.dto.LogisticsVO;
 import com.john.ecommerce.module.merchant.dto.ShopApplyDTO;
 import com.john.ecommerce.module.merchant.dto.ShopAuditDTO;
+import com.john.ecommerce.module.merchant.dto.ShopUpdateDTO;
 import com.john.ecommerce.module.merchant.dto.ShopVO;
 import com.john.ecommerce.module.merchant.entity.Merchant;
 import com.john.ecommerce.module.merchant.service.MerchantService;
@@ -52,6 +53,12 @@ public class ShopController {
     public R<ShopVO> apply(@Valid @RequestBody ShopApplyDTO dto) {
         Merchant merchant = merchantService.requireApproved();
         return R.ok(shopService.apply(merchant, dto));
+    }
+
+    @PutMapping("/{id:\\d+}")
+    public R<ShopVO> update(@PathVariable Long id, @Valid @RequestBody ShopUpdateDTO dto) {
+        Merchant merchant = merchantService.requireApproved();
+        return R.ok(shopService.updateOwned(merchant, id, dto));
     }
 
     @PutMapping("/{id:\\d+}/audit")

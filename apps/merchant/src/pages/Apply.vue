@@ -59,6 +59,12 @@
           </div>
           <el-table :data="me.shops || []" empty-text="暂无店铺">
             <el-table-column prop="id" label="ID" width="90" />
+            <el-table-column label="Logo" width="72">
+              <template #default="{ row }">
+                <img v-if="row.logo" :src="row.logo" alt="" class="shop-logo" />
+                <span v-else class="muted">—</span>
+              </template>
+            </el-table-column>
             <el-table-column prop="name" label="店名" min-width="160" />
             <el-table-column label="状态" width="120">
               <template #default="{ row }">
@@ -67,8 +73,9 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="120">
+            <el-table-column label="操作" width="160">
               <template #default="{ row }">
+                <el-button link type="primary" @click="openEditShop(row)">编辑</el-button>
                 <el-button
                   v-if="row.status === 1"
                   link
@@ -77,7 +84,6 @@
                 >
                   进入
                 </el-button>
-                <span v-else class="muted">—</span>
               </template>
             </el-table-column>
           </el-table>
@@ -130,6 +136,32 @@
         </el-form>
       </div>
     </div>
+
+    <el-dialog
+      v-model="editVisible"
+      title="编辑店铺"
+      width="480px"
+      destroy-on-close
+      @closed="resetEditForm"
+    >
+      <el-form label-position="top">
+        <el-form-item label="店铺名称" required>
+          <el-input v-model="editForm.name" placeholder="店铺名称" size="large" />
+        </el-form-item>
+        <el-form-item label="Logo">
+          <ImageUpload v-model="editForm.logo" folder="shop" :aspect-ratio="1" hint="上传店铺 Logo" />
+        </el-form-item>
+        <p v-if="editForm.status === 2" class="hint warn">
+          当前为已拒绝，保存后将重新进入开店审核
+        </p>
+      </el-form>
+      <template #footer>
+        <el-button @click="editVisible = false">取消</el-button>
+        <el-button type="primary" :loading="savingEdit" @click="saveEditShop">
+          {{ editForm.status === 2 ? '保存并重新提交' : '保存' }}
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -140,6 +172,7 @@ import { ElMessage } from 'element-plus'
 import client from '@/api/client'
 import ImageUpload from '@/components/ImageUpload.vue'
 import { useMerchantStore } from '@/stores/merchant'
+import type { Shop } from '@/types'
 
 const router = useRouter()
 const merchant = useMerchantStore()
@@ -148,6 +181,8 @@ const loaded = computed(() => merchant.loaded)
 const savingApply = ref(false)
 const savingProfile = ref(false)
 const savingShop = ref(false)
+const savingEdit = ref(false)
+const editVisible = ref(false)
 
 const applyForm = reactive({
   name: '',
@@ -166,6 +201,12 @@ const profileForm = reactive({
 const shopForm = reactive({
   name: '',
   logo: '',
+})
+const editForm = reactive({
+  id: '' as string | number,
+  name: '',
+  logo: '',
+  status: undefined as number | undefined,
 })
 
 const merchantStatusText = computed(() => {
@@ -205,6 +246,40 @@ function shopTagType(status?: number) {
 function switchShop(id: number | string) {
   merchant.setActiveShop(id)
   router.push('/products')
+}
+
+function openEditShop(row: Shop) {
+  editForm.id = row.id
+  editForm.name = row.name || ''
+  editForm.logo = row.logo || ''
+  editForm.status = row.status
+  editVisible.value = true
+}
+
+function resetEditForm() {
+  editForm.id = ''
+  editForm.name = ''
+  editForm.logo = ''
+  editForm.status = undefined
+}
+
+async function saveEditShop() {
+  if (!editForm.name.trim()) {
+    ElMessage.warning('请填写店铺名称')
+    return
+  }
+  savingEdit.value = true
+  try {
+    await client.put(`/shop/${editForm.id}`, {
+      name: editForm.name.trim(),
+      logo: editForm.logo || null,
+    })
+    ElMessage.success(editForm.status === 2 ? '已保存并重新提交审核' : '店铺资料已保存')
+    editVisible.value = false
+    await merchant.fetchMe()
+  } finally {
+    savingEdit.value = false
+  }
 }
 
 async function submitApply() {
@@ -320,6 +395,16 @@ onMounted(() => {
 .muted {
   color: var(--color-muted);
   font-size: 13px;
+}
+
+.shop-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: contain;
+  background: #f8fafc;
+  border: 1px solid var(--color-border);
+  vertical-align: middle;
 }
 
 @media (max-width: 640px) {

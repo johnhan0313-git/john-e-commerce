@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.john.ecommerce.common.exception.BizException;
 import com.john.ecommerce.module.merchant.dto.ShopApplyDTO;
 import com.john.ecommerce.module.merchant.dto.ShopAuditDTO;
+import com.john.ecommerce.module.merchant.dto.ShopUpdateDTO;
 import com.john.ecommerce.module.merchant.dto.ShopVO;
 import com.john.ecommerce.module.merchant.entity.Merchant;
 import com.john.ecommerce.module.merchant.entity.Shop;
@@ -51,6 +52,21 @@ public class ShopService {
         shop.setLogo(dto.getLogo());
         shop.setStatus(STATUS_PENDING);
         shopMapper.insert(shop);
+        return toVO(shop);
+    }
+
+    /**
+     * Seller updates own shop name/logo. Rejected shops go back to pending for re-audit.
+     */
+    @Transactional
+    public ShopVO updateOwned(Merchant merchant, Long shopId, ShopUpdateDTO dto) {
+        Shop shop = requireOwned(shopId, merchant.getId());
+        shop.setName(dto.getName().trim());
+        shop.setLogo(blankToNull(dto.getLogo()));
+        if (shop.getStatus() != null && shop.getStatus() == STATUS_REJECTED) {
+            shop.setStatus(STATUS_PENDING);
+        }
+        shopMapper.updateById(shop);
         return toVO(shop);
     }
 
@@ -148,5 +164,10 @@ public class ShopService {
             case STATUS_DISABLED -> "停用";
             default -> "未知";
         };
+    }
+
+    private static String blankToNull(String s) {
+        if (s == null || s.isBlank()) return null;
+        return s.trim();
     }
 }
