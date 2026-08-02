@@ -39,8 +39,9 @@ public class ProductController {
                                @RequestParam(defaultValue = "20") int size,
                                @RequestParam(required = false) Integer status,
                                @RequestParam(required = false) Long shopId,
-                               @RequestParam(required = false) Long merchantId) {
-        return R.ok(productService.list(page, size, status, shopId, merchantId));
+                               @RequestParam(required = false) Long merchantId,
+                               @RequestParam(required = false) Long categoryId) {
+        return R.ok(productService.list(page, size, status, shopId, merchantId, categoryId));
     }
 
     @PutMapping("/{id}/status")

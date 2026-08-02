@@ -35,8 +35,19 @@ export interface Spu {
   detail?: string
   categoryId?: number | string
   brandId?: number | string
+  shopId?: number | string
+  merchantId?: number | string
   status?: number
   sales?: number
+}
+
+export interface Category {
+  id: number | string
+  parentId?: number | string
+  name: string
+  sortOrder?: number
+  level?: number
+  children?: Category[]
 }
 
 export interface Sku {
@@ -48,6 +59,15 @@ export interface Sku {
   price: number
   costPrice?: number
   status?: number
+}
+
+export interface Shop {
+  id: number | string
+  merchantId?: number | string
+  name: string
+  logo?: string
+  status?: number
+  statusLabel?: string
 }
 
 export interface CartItem {

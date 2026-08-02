@@ -8,6 +8,7 @@ const router = createRouter({
     { path: '/login', component: () => import('@/pages/Login.vue'), meta: { guest: true } },
     { path: '/products', component: () => import('@/pages/Products.vue') },
     { path: '/products/:id', component: () => import('@/pages/ProductDetail.vue') },
+    { path: '/shops/:id', component: () => import('@/pages/Shop.vue') },
     { path: '/cart', component: () => import('@/pages/Cart.vue'), meta: { auth: true } },
     { path: '/checkout', component: () => import('@/pages/Checkout.vue'), meta: { auth: true } },
     { path: '/pay', component: () => import('@/pages/Pay.vue'), meta: { auth: true } },

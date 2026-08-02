@@ -28,10 +28,12 @@ public class PublicProductController {
     @GetMapping
     public R<Page<SpuVO>> list(@RequestParam(defaultValue = "1") int page,
                                @RequestParam(defaultValue = "20") int size,
+                               @RequestParam(required = false) Long shopId,
+                               @RequestParam(required = false) Long categoryId,
                                @RequestHeader(value = "X-Tenant-Id", required = false) Long headerTenantId,
                                @RequestParam(value = "tenantId", required = false) Long paramTenantId) {
         setTenantIfAbsent(headerTenantId, paramTenantId);
-        return R.ok(productService.list(page, size, 1));
+        return R.ok(productService.list(page, size, 1, shopId, null, categoryId));
     }
 
     @GetMapping("/{id}")

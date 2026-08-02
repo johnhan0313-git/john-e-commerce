@@ -26,6 +26,7 @@ public class ProductService {
 
     private final SpuMapper spuMapper;
     private final SkuService skuService;
+    private final CategoryService categoryService;
 
     @Transactional
     public SpuVO create(SpuCreateDTO dto) {
@@ -59,14 +60,14 @@ public class ProductService {
         Spu spu = require(id);
         spu.setName(dto.getName().trim());
         spu.setSubtitle(blankToNull(dto.getSubtitle()));
-        if (dto.getCategoryId() != null) spu.setCategoryId(dto.getCategoryId());
+        // 建品页完整提交：允许 categoryId 置空
+        spu.setCategoryId(dto.getCategoryId());
         if (dto.getBrandId() != null) spu.setBrandId(dto.getBrandId());
         if (dto.getProductCode() != null) spu.setProductCode(blankToNull(dto.getProductCode()));
         spu.setMainImages(dto.getMainImages());
         spu.setDetail(blankToNull(dto.getDetail()));
         if (dto.getProductType() != null) spu.setProductType(dto.getProductType());
         if (dto.getSortOrder() != null) spu.setSortOrder(dto.getSortOrder());
-        // 显式传 salesAttrs（含空）则覆盖；前端编辑页总会带
         if (dto.getSalesAttrs() != null) {
             spu.setSalesAttrs(normalizeSalesAttrs(dto.getSalesAttrs()));
         }
@@ -107,14 +108,23 @@ public class ProductService {
     }
 
     public Page<SpuVO> list(int page, int size, Integer status) {
-        return list(page, size, status, null, null);
+        return list(page, size, status, null, null, null);
     }
 
     public Page<SpuVO> list(int page, int size, Integer status, Long shopId, Long merchantId) {
+        return list(page, size, status, shopId, merchantId, null);
+    }
+
+    public Page<SpuVO> list(int page, int size, Integer status, Long shopId, Long merchantId, Long categoryId) {
+        List<Long> categoryIds = null;
+        if (categoryId != null) {
+            categoryIds = categoryService.selfAndDescendantIds(categoryId);
+        }
         LambdaQueryWrapper<Spu> wrapper = new LambdaQueryWrapper<Spu>()
                 .eq(status != null, Spu::getStatus, status)
                 .eq(shopId != null, Spu::getShopId, shopId)
                 .eq(merchantId != null, Spu::getMerchantId, merchantId)
+                .in(categoryIds != null && !categoryIds.isEmpty(), Spu::getCategoryId, categoryIds)
                 .orderByDesc(Spu::getCreatedAt);
         Page<Spu> p = spuMapper.selectPage(new Page<>(page, size), wrapper);
         Page<SpuVO> result = new Page<>();

@@ -74,6 +74,18 @@
         <el-form-item label="副标题">
           <el-input v-model="form.subtitle" />
         </el-form-item>
+        <el-form-item label="类目">
+          <el-tree-select
+            v-model="form.categoryId"
+            :data="categoryTree"
+            :props="{ label: 'name', value: 'id', children: 'children' }"
+            check-strictly
+            clearable
+            filterable
+            placeholder="选择类目"
+            style="width: 100%"
+          />
+        </el-form-item>
         <el-form-item label="主图">
           <ImageUpload v-model="form.imageUrl" folder="product" :aspect-ratio="1" hint="上传主图" />
         </el-form-item>
@@ -175,7 +187,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import client from '@/api/client'
 import ImageUpload from '@/components/ImageUpload.vue'
-import type { PageResult, R, SalesAttr as SalesAttrType, Sku, Spu } from '@/types'
+import type { Category, PageResult, R, SalesAttr as SalesAttrType, Sku, Spu } from '@/types'
 
 interface SalesAttr {
   name: string
@@ -208,11 +220,13 @@ const form = reactive({
   subtitle: '',
   imageUrl: '',
   detail: '',
+  categoryId: null as number | null,
   salesAttrs: [] as SalesAttr[],
   skus: [] as SkuDraft[],
 })
 const batchPrice = ref(99)
 const batchStock = ref(0)
+const categoryTree = ref<Category[]>([])
 
 const activeAttrNames = computed(() =>
   form.salesAttrs
@@ -338,6 +352,7 @@ function resetForm() {
     subtitle: '',
     imageUrl: '',
     detail: '',
+    categoryId: null,
     salesAttrs: [{ name: '颜色', values: [] }] as SalesAttr[],
     skus: [] as SkuDraft[],
   })
@@ -346,8 +361,14 @@ function resetForm() {
   regenSkus()
 }
 
+async function loadCategories() {
+  const res = (await client.get('/category/tree')) as R<Category[]>
+  categoryTree.value = res.data || []
+}
+
 function openCreate() {
   resetForm()
+  loadCategories()
   editorVisible.value = true
 }
 
@@ -355,6 +376,7 @@ async function openEdit(row: Spu) {
   editorVisible.value = true
   editorLoading.value = true
   try {
+    await loadCategories()
     const detail = (await client.get(`/product/${row.id}`)) as R<Spu>
     const spu = detail.data || row
     const skuRes = (await client.get('/sku', { params: { spuId: row.id } })) as R<Sku[]>
@@ -372,6 +394,7 @@ async function openEdit(row: Spu) {
       subtitle: spu.subtitle || '',
       imageUrl: spu.mainImages?.[0] || '',
       detail: spu.detail || '',
+      categoryId: spu.categoryId != null ? Number(spu.categoryId) : null,
       salesAttrs: salesAttrs.length ? salesAttrs : [{ name: '颜色', values: [] }],
       skus: skuList.map((s) => ({
         id: s.id,
@@ -400,6 +423,7 @@ function buildPayload() {
     name: form.name.trim(),
     subtitle: form.subtitle || undefined,
     detail: form.detail || undefined,
+    categoryId: form.categoryId,
     mainImages: form.imageUrl ? [form.imageUrl] : [],
     salesAttrs,
     skus: form.skus.map((s) => ({

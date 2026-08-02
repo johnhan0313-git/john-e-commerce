@@ -27,6 +27,16 @@ export interface SalesAttr {
   values: string[]
 }
 
+export interface Category {
+  id: number | string
+  parentId?: number | string
+  name: string
+  sortOrder?: number
+  level?: number
+  children?: Category[]
+  createdAt?: number
+}
+
 export interface Spu {
   id: number
   name: string

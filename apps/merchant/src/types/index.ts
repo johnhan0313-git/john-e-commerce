@@ -43,6 +43,15 @@ export interface SalesAttr {
   values: string[]
 }
 
+export interface Category {
+  id: number | string
+  parentId?: number | string
+  name: string
+  sortOrder?: number
+  level?: number
+  children?: Category[]
+}
+
 export interface Spu {
   id: number | string
   name: string
@@ -52,6 +61,7 @@ export interface Spu {
   status: number
   shopId?: number | string
   merchantId?: number | string
+  categoryId?: number | string
   salesAttrs?: SalesAttr[]
 }
 

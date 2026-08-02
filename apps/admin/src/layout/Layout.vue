@@ -25,6 +25,10 @@
           <el-icon><Goods /></el-icon>
           <span>商品</span>
         </el-menu-item>
+        <el-menu-item v-if="modules.isEnabled('product')" index="/categories">
+          <el-icon><Menu /></el-icon>
+          <span>类目</span>
+        </el-menu-item>
         <el-menu-item v-if="modules.isEnabled('trade')" index="/orders">
           <el-icon><List /></el-icon>
           <span>订单</span>
@@ -65,7 +69,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Brush, Goods, List, Odometer, SetUp, Shop, UserFilled, Wallet } from '@element-plus/icons-vue'
+import { Brush, Goods, List, Menu, Odometer, SetUp, Shop, UserFilled, Wallet } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { useModulesStore } from '@/stores/modules'
 

@@ -5,7 +5,9 @@ import com.john.ecommerce.common.exception.BizException;
 import com.john.ecommerce.module.product.dto.CategoryCreateDTO;
 import com.john.ecommerce.module.product.dto.CategoryVO;
 import com.john.ecommerce.module.product.entity.Category;
+import com.john.ecommerce.module.product.entity.Spu;
 import com.john.ecommerce.module.product.mapper.CategoryMapper;
+import com.john.ecommerce.module.product.mapper.SpuMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
 public class CategoryService {
 
     private final CategoryMapper categoryMapper;
+    private final SpuMapper spuMapper;
 
     public CategoryVO create(CategoryCreateDTO dto) {
         Category cat = new Category();
@@ -60,7 +63,30 @@ public class CategoryService {
         if (childCount != null && childCount > 0) {
             throw new BizException("存在子类目，无法删除");
         }
+        Long spuCount = spuMapper.selectCount(new LambdaQueryWrapper<Spu>().eq(Spu::getCategoryId, id));
+        if (spuCount != null && spuCount > 0) {
+            throw new BizException("类目下仍有商品，无法删除");
+        }
         categoryMapper.deleteById(id);
+    }
+
+    /** 自身 + 全部子孙类目 id（用于商品筛选） */
+    public List<Long> selfAndDescendantIds(Long categoryId) {
+        require(categoryId);
+        List<Category> all = categoryMapper.selectList(new LambdaQueryWrapper<Category>()
+                .orderByAsc(Category::getId));
+        Map<Long, List<Category>> byParent = all.stream()
+                .collect(Collectors.groupingBy(c -> c.getParentId() == null ? 0L : c.getParentId()));
+        List<Long> ids = new ArrayList<>();
+        collectIds(byParent, categoryId, ids);
+        return ids;
+    }
+
+    private void collectIds(Map<Long, List<Category>> byParent, Long id, List<Long> out) {
+        out.add(id);
+        for (Category c : byParent.getOrDefault(id, List.of())) {
+            collectIds(byParent, c.getId(), out);
+        }
     }
 
     private List<CategoryVO> buildTree(Map<Long, List<Category>> byParent, Long parentId) {

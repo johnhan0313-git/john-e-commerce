@@ -15,6 +15,7 @@ const router = createRouter({
         { path: 'merchants', component: () => import('@/pages/Merchants.vue'), meta: { module: 'merchant' } },
         { path: 'shops', component: () => import('@/pages/Shops.vue'), meta: { module: 'merchant' } },
         { path: 'products', component: () => import('@/pages/Products.vue'), meta: { module: 'product' } },
+        { path: 'categories', component: () => import('@/pages/Categories.vue'), meta: { module: 'product' } },
         { path: 'orders', component: () => import('@/pages/Orders.vue'), meta: { module: 'trade' } },
         { path: 'settlements', component: () => import('@/pages/Settlements.vue'), meta: { module: 'settle' } },
         { path: 'tenant/modules', component: () => import('@/pages/TenantModules.vue') },

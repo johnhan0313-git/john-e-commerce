@@ -11,6 +11,20 @@
       <p class="muted">{{ spu.subtitle || '精选商品' }}</p>
       <p class="price">¥{{ displayPrice }}</p>
 
+      <router-link
+        v-if="shop"
+        class="shop-entry card"
+        :to="`/shops/${shop.id}`"
+      >
+        <img v-if="shop.logo" :src="shop.logo" :alt="shop.name" class="shop-logo" />
+        <div v-else class="shop-mark">{{ shopMark }}</div>
+        <div class="shop-meta">
+          <strong>{{ shop.name }}</strong>
+          <span class="muted">进店逛逛</span>
+        </div>
+        <span class="shop-arrow">→</span>
+      </router-link>
+
       <div v-if="skus.length" class="sku-block">
         <h3>规格</h3>
         <div class="sku-list">
@@ -54,13 +68,14 @@ import { useRoute, useRouter } from 'vue-router'
 import client from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { toast } from '@/utils/toast'
-import type { R, Sku, Spu } from '@/types'
+import type { R, Shop, Sku, Spu } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 
 const spu = ref<Spu | null>(null)
+const shop = ref<Shop | null>(null)
 const skus = ref<Sku[]>([])
 const selectedSkuId = ref<number | string | null>(null)
 const quantity = ref(1)
@@ -70,6 +85,7 @@ const adding = ref(false)
 const selectedSku = computed(() => skus.value.find((s) => s.id === selectedSkuId.value) || null)
 const displayPrice = computed(() => selectedSku.value?.price ?? skus.value[0]?.price ?? '—')
 const cover = computed(() => spu.value?.mainImages?.[0])
+const shopMark = computed(() => (shop.value?.name?.trim().charAt(0) || '店').toUpperCase())
 
 onMounted(async () => {
   const id = route.params.id
@@ -81,6 +97,14 @@ onMounted(async () => {
     spu.value = spuRes.data
     skus.value = skuRes.data || []
     selectedSkuId.value = skus.value[0]?.id ?? null
+    if (spu.value?.shopId) {
+      try {
+        const shopRes = (await client.get(`/public/shop/${spu.value.shopId}`)) as R<Shop>
+        shop.value = shopRes.data
+      } catch {
+        shop.value = null
+      }
+    }
   } finally {
     loading.value = false
   }
@@ -134,6 +158,60 @@ async function addToCart() {
 .price {
   font-size: 1.5rem;
   margin: var(--space-4) 0;
+}
+
+.shop-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  margin-bottom: var(--space-4);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.shop-entry:hover {
+  border-color: var(--color-accent);
+}
+
+.shop-logo,
+.shop-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.shop-mark {
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-accent), #8b4513);
+}
+
+.shop-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.shop-meta strong {
+  font-size: 14px;
+}
+
+.shop-meta .muted {
+  font-size: 12px;
+}
+
+.shop-arrow {
+  color: var(--color-muted);
+  font-size: 16px;
 }
 
 .sku-list {
