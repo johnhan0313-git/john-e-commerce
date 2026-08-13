@@ -20,6 +20,7 @@
 - `run.sh`：macOS 本地一键启停；通过 `john-server` SSH 隧道连接 PostgreSQL、Redis、MinIO。
 - `docker-compose.yml`：开发镜像组合，但依赖宿主机映射端口上的基础设施。
 - `docker-compose.prod.yml`、`deploy/`、`scripts/init-john-server.sh`：服务器部署资料。
+- 生产 nginx 必须同时声明 `mall.cool-app.me`、`eadmin.cool-app.me`、`merchant.cool-app.me` 三个 `server_name`，分别反代到对应容器；新增域名后要同步 nginx 配置并 reload。
 
 ## 关键架构事实
 
