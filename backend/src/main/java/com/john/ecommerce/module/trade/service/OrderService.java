@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.john.ecommerce.common.context.UserContext;
 import com.john.ecommerce.common.enums.OrderStatus;
+import com.john.ecommerce.module.user.identity.IdentityCodes;
 import com.john.ecommerce.common.enums.PayStatus;
 import com.john.ecommerce.common.exception.BizException;
 import com.john.ecommerce.config.AppProperties;
@@ -166,6 +167,12 @@ public class OrderService {
                 .eq(Order::getOrderGroupNo, orderGroupNo)
                 .orderByAsc(Order::getId));
         if (orders.isEmpty()) throw new BizException("订单组不存在");
+        if (!isOps()) {
+            Long userId = requireUserId();
+            if (orders.stream().anyMatch(order -> !userId.equals(order.getUserId()))) {
+                throw new BizException(403, "无权访问该订单组");
+            }
+        }
 
         List<OrderVO> vos = orders.stream().map(o -> {
             List<OrderItem> items = orderItemMapper.selectList(new LambdaQueryWrapper<OrderItem>()
@@ -187,6 +194,19 @@ public class OrderService {
     public OrderVO getById(Long id) {
         Order order = orderMapper.selectById(id);
         if (order == null) throw new BizException("订单不存在");
+        if (!isOps() && !requireUserId().equals(order.getUserId())) {
+            throw new BizException(403, "无权访问该订单");
+        }
+        List<OrderItem> items = orderItemMapper.selectList(
+                new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, id));
+        return toVO(order, items);
+    }
+
+    public OrderVO getByIdForShop(Long id, Long shopId) {
+        Order order = orderMapper.selectById(id);
+        if (order == null || shopId == null || !shopId.equals(order.getShopId())) {
+            throw new BizException("订单不属于当前店铺");
+        }
         List<OrderItem> items = orderItemMapper.selectList(
                 new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, id));
         return toVO(order, items);
@@ -202,6 +222,9 @@ public class OrderService {
 
     public Page<OrderVO> list(int page, int size, Integer status, Long shopId, Long merchantId, boolean buyerScoped) {
         Long userId = UserContext.getCurrentUserId();
+        if (!buyerScoped && !isOps()) {
+            throw new BizException(403, "无权查询全部订单");
+        }
         LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<Order>()
                 .eq(buyerScoped && userId != null, Order::getUserId, userId)
                 .eq(status != null, Order::getStatus, status)
@@ -226,6 +249,15 @@ public class OrderService {
     public void updateStatus(Long id, Integer status) {
         Order order = orderMapper.selectById(id);
         if (order == null) throw new BizException("订单不存在");
+        if (!isOps()) {
+            Long userId = requireUserId();
+            if (!userId.equals(order.getUserId())) {
+                throw new BizException(403, "无权操作该订单");
+            }
+            if (status == null || status != OrderStatus.CANCELLED.getCode()) {
+                throw new BizException(403, "买家只能取消自己的订单");
+            }
+        }
         orderStateMachine.assertTransition(order.getStatus(), status);
         if (status == OrderStatus.CANCELLED.getCode()) {
             inventoryFacade.unlockForOrder(order);
@@ -237,6 +269,16 @@ public class OrderService {
         }
         order.setStatus(status);
         orderMapper.updateById(order);
+    }
+
+    private boolean isOps() {
+        return UserContext.hasIdentity(IdentityCodes.OPS);
+    }
+
+    private Long requireUserId() {
+        Long userId = UserContext.getCurrentUserId();
+        if (userId == null) throw new BizException(401, "用户未登录");
+        return userId;
     }
 
     /**

@@ -7,12 +7,14 @@ import com.john.ecommerce.common.result.R;
 import com.john.ecommerce.module.payment.entity.PayRouteRule;
 import com.john.ecommerce.module.payment.mapper.PayRouteRuleMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/pay-route")
 @RequiredArgsConstructor
 @RequiresModule(ModuleCodes.PAYMENT)
+@PreAuthorize("hasRole('OPS')")
 public class PayRouteController {
 
     private final PayRouteRuleMapper payRouteRuleMapper;

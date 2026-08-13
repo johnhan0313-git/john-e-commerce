@@ -7,6 +7,7 @@ import com.john.ecommerce.module.payment.entity.SplitDetail;
 import com.john.ecommerce.module.payment.entity.SplitOrder;
 import com.john.ecommerce.module.payment.service.SplitService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.List;
 @RequestMapping("/split")
 @RequiredArgsConstructor
 @RequiresModule(ModuleCodes.PAYMENT)
+@PreAuthorize("hasRole('OPS')")
 public class SplitController {
 
     private final SplitService splitService;

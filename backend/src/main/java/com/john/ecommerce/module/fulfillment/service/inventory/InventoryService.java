@@ -17,6 +17,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.john.ecommerce.module.trade.entity.Refund;
+import com.john.ecommerce.module.trade.entity.RefundItem;
 
 /**
  * Real inventory implementation replacing NoOpInventoryFacade.
@@ -203,6 +205,24 @@ public class InventoryService implements InventoryFacade {
             d.setStatus(LOCK_STATUS_CONSUMED);
             stockLockDetailMapper.updateById(d);
             updateSummary(d.getWarehouseId(), d.getSkuId());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void restoreForRefund(Refund refund, Order order, List<RefundItem> items) {
+        if (refund == null || order == null || order.getWarehouseId() == null || items == null) return;
+        for (RefundItem item : items) {
+            if (item.getStockRestored() != null && item.getStockRestored() == 1) continue;
+            StockLot lot = ensureDefaultLot(order.getWarehouseId(), item.getSkuId());
+            int before = lot.getAvailable() != null ? lot.getAvailable() : 0;
+            int qty = item.getQuantity() != null ? item.getQuantity() : 0;
+            lot.setAvailable(before + qty);
+            stockLotMapper.updateById(lot);
+            writeLog(order.getWarehouseId(), item.getSkuId(), lot.getLotNo(), "REFUND_RESTORE", qty,
+                    before, lot.getAvailable(), "REFUND", refund.getId(), null);
+            item.setStockRestored(1);
+            updateSummary(order.getWarehouseId(), item.getSkuId());
         }
     }
 

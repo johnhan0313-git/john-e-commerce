@@ -40,6 +40,29 @@ class AuthLoginIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void rejectsTenantHeaderThatConflictsWithJwt() throws Exception {
+        String bearer = TestAuthHelper.loginAndBearer(mockMvc, objectMapper);
+
+        mockMvc.perform(get("/tenant/modules")
+                        .header("Authorization", bearer)
+                        .header("X-Tenant-Id", "2"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(403));
+    }
+
+    @Test
+    void buyerCannotUseOperationsEndpoints() throws Exception {
+        String email = "buyer-role-" + System.currentTimeMillis() + "@example.com";
+        String bearer = TestAuthHelper.loginAndBearer(
+                mockMvc, objectMapper, email, TestAuthHelper.DEMO_CODE, "mall");
+
+        mockMvc.perform(get("/merchant")
+                        .header("Authorization", bearer))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(403));
+    }
+
+    @Test
     void mallPortalAutoRegistersUnknownEmail() throws Exception {
         String email = "buyer-auto-" + System.currentTimeMillis() + "@example.com";
 

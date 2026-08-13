@@ -9,12 +9,14 @@ import com.john.ecommerce.module.fulfillment.dto.StockOrderVO;
 import com.john.ecommerce.module.fulfillment.service.StockOrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/stock-order")
 @RequiredArgsConstructor
 @RequiresModule(ModuleCodes.FULFILLMENT)
+@PreAuthorize("hasRole('OPS')")
 public class StockOrderController {
 
     private final StockOrderService stockOrderService;

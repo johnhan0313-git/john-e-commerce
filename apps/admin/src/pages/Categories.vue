@@ -3,7 +3,7 @@
     <div class="page-header">
       <div>
         <h2>商品类目</h2>
-        <p class="desc">树形类目，供建品归属与商城筛选</p>
+        <p class="desc">树形类目，最多 3 级（大类 / 中类 / 小类），供建品归属与商城筛选</p>
       </div>
       <div class="page-header-actions">
         <el-button type="primary" @click="openCreate(null)">新增一级类目</el-button>
@@ -24,7 +24,12 @@
         <el-table-column prop="sortOrder" label="排序" width="90" />
         <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openCreate(row)">加子类</el-button>
+            <el-button
+              v-if="(row.level ?? 1) < MAX_LEVEL"
+              link
+              type="primary"
+              @click="openCreate(row)"
+            >加子类</el-button>
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" @click="remove(row)">删除</el-button>
           </template>
@@ -63,6 +68,9 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import client from '@/api/client'
 import type { Category, R } from '@/types'
 
+/** 与后端 CategoryService.MAX_LEVEL 一致 */
+const MAX_LEVEL = 3
+
 const tree = ref<Category[]>([])
 const loading = ref(false)
 const visible = ref(false)
@@ -86,6 +94,10 @@ async function load() {
 }
 
 function openCreate(parent: Category | null) {
+  if (parent && (parent.level ?? 1) >= MAX_LEVEL) {
+    ElMessage.warning(`类目最多 ${MAX_LEVEL} 级，无法再添加子类`)
+    return
+  }
   form.id = ''
   // 雪花 ID 超过 JS 安全整数，禁止 Number()，保持字符串
   form.parentId = parent ? String(parent.id) : ''

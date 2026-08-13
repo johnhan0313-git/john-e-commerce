@@ -9,12 +9,14 @@ import com.john.ecommerce.module.fulfillment.dto.InventoryLogVO;
 import com.john.ecommerce.module.fulfillment.entity.InventoryLog;
 import com.john.ecommerce.module.fulfillment.mapper.InventoryLogMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/inventory/logs")
 @RequiredArgsConstructor
 @RequiresModule(ModuleCodes.FULFILLMENT)
+@PreAuthorize("hasRole('OPS')")
 public class InventoryLogController {
 
     private final InventoryLogMapper inventoryLogMapper;

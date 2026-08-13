@@ -49,3 +49,7 @@ app:
   trade:
     pay-timeout-ms: 1800000
     unpaid-cancel-delay-ms: 3600000
+  payment:
+    webhook-secret: test-payment-webhook-secret
+  logistics:
+    webhook-secret: test-logistics-webhook-secret

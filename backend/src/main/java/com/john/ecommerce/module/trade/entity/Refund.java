@@ -1,6 +1,7 @@
 package com.john.ecommerce.module.trade.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.john.ecommerce.common.base.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,9 +15,10 @@ public class Refund extends BaseEntity {
     private Long orderId;
     private Long paymentId;
     private Long userId;
-    private BigDecimal refundAmount;
+    @TableField("amount")
+    private BigDecimal amount;
     private String reason;
     private Integer status;
-    private Long approvedAt;
-    private Long completedAt;
+    private Long refundedAt;
+    private String channelRefundNo;
 }

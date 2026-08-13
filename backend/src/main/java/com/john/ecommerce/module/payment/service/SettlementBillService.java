@@ -13,6 +13,7 @@ import com.john.ecommerce.module.payment.ledger.service.LedgerService;
 import com.john.ecommerce.module.payment.mapper.*;
 import com.john.ecommerce.module.payment.util.MoneyUtils;
 import com.john.ecommerce.module.trade.entity.Order;
+import com.john.ecommerce.module.trade.entity.Refund;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,6 +54,33 @@ public class SettlementBillService {
         so.setBillStatus(0);
         so.setStatus(1);
         settlementOrderMapper.insert(so);
+    }
+
+    @Transactional
+    public SettlementOrder createRefundReversal(Refund refund, Order order) {
+        if (refund == null || refund.getId() == null) throw new BizException("退款申请不能为空");
+        if (order == null || order.getShopId() == null) throw new BizException("退款订单缺少店铺");
+        String idempotentKey = "REFUND:" + refund.getId();
+        SettlementOrder existing = settlementOrderMapper.selectOne(new LambdaQueryWrapper<SettlementOrder>()
+                .eq(SettlementOrder::getIdempotentKey, idempotentKey)
+                .last("LIMIT 1"));
+        if (existing != null) return existing;
+
+        SettlementOrder reversal = new SettlementOrder();
+        reversal.setSettlementNo("SR" + UUID.randomUUID().toString().replace("-", "").substring(0, 20));
+        reversal.setDirection(SettlementDirection.REVERSE.getCode());
+        reversal.setBizType("REFUND");
+        reversal.setPaymentId(refund.getPaymentId());
+        reversal.setOrderId(order.getId());
+        reversal.setMerchantId(order.getMerchantId());
+        reversal.setShopId(order.getShopId());
+        reversal.setAmount(MoneyUtils.toCents(refund.getAmount()));
+        reversal.setCurrency("CNY");
+        reversal.setBillStatus(0);
+        reversal.setStatus(1);
+        reversal.setIdempotentKey(idempotentKey);
+        settlementOrderMapper.insert(reversal);
+        return reversal;
     }
 
     @Transactional
@@ -150,6 +178,16 @@ public class SettlementBillService {
 
     public Page<SettlementBill> listBills(int page, int size, Long merchantId) {
         return listBills(page, size, null, merchantId);
+    }
+
+    public Page<SettlementBill> listBillsForShop(int page, int size, Long shopId) {
+        if (shopId == null) throw new BizException("店铺 ID 不能为空");
+        return listBills(page, size, shopId, null);
+    }
+
+    public Page<SettlementOrder> listOrdersForShop(int page, int size, Long shopId) {
+        if (shopId == null) throw new BizException("店铺 ID 不能为空");
+        return listOrders(page, size, shopId, null);
     }
 
     @Transactional

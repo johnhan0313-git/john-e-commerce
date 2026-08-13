@@ -10,6 +10,7 @@ import com.john.ecommerce.module.payment.ledger.entity.LedgerAccount;
 import com.john.ecommerce.module.payment.ledger.entity.LedgerFlow;
 import com.john.ecommerce.module.payment.ledger.service.LedgerService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -28,6 +29,7 @@ public class LedgerController {
     }
 
     @PostMapping("/recharge")
+    @PreAuthorize("hasRole('OPS')")
     public R<Void> recharge(@RequestParam long amount) {
         Long userId = UserContext.getCurrentUserId();
         LedgerAccount account = ledgerService.openAccount("USER", userId, "USER_BALANCE", "CNY");

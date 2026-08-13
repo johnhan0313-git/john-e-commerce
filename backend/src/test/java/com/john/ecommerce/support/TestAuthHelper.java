@@ -24,15 +24,20 @@ public final class TestAuthHelper {
 
     public static String loginAndBearer(MockMvc mockMvc, ObjectMapper objectMapper,
                                         String email, String code) throws Exception {
+        return loginAndBearer(mockMvc, objectMapper, email, code, "mall");
+    }
+
+    public static String loginAndBearer(MockMvc mockMvc, ObjectMapper objectMapper,
+                                        String email, String code, String portal) throws Exception {
         mockMvc.perform(post("/auth/email-code")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + email + "\"}"))
+                        .content("{\"email\":\"" + email + "\",\"portal\":\"" + portal + "\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
 
         String body = """
-                {"email":"%s","code":"%s"}
-                """.formatted(email, code);
+                {"email":"%s","code":"%s","portal":"%s"}
+                """.formatted(email, code, portal);
         MvcResult result = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))

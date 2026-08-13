@@ -7,12 +7,14 @@ import com.john.ecommerce.common.result.R;
 import com.john.ecommerce.module.payment.entity.PayChannelConfig;
 import com.john.ecommerce.module.payment.mapper.PayChannelConfigMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/pay-channel-config")
 @RequiredArgsConstructor
 @RequiresModule(ModuleCodes.PAYMENT)
+@PreAuthorize("hasRole('OPS')")
 public class PayChannelConfigController {
 
     private final PayChannelConfigMapper payChannelConfigMapper;

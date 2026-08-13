@@ -10,6 +10,7 @@ import com.john.ecommerce.module.fulfillment.dto.WarehouseVO;
 import com.john.ecommerce.module.fulfillment.service.WarehouseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.List;
 @RequestMapping("/warehouse")
 @RequiredArgsConstructor
 @RequiresModule(ModuleCodes.FULFILLMENT)
+@PreAuthorize("hasRole('OPS')")
 public class WarehouseController {
 
     private final WarehouseService warehouseService;

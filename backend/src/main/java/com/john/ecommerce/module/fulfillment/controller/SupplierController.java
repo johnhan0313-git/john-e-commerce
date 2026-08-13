@@ -9,12 +9,14 @@ import com.john.ecommerce.module.fulfillment.dto.SupplierVO;
 import com.john.ecommerce.module.fulfillment.service.SupplierService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/supplier")
 @RequiredArgsConstructor
 @RequiresModule(ModuleCodes.PURCHASE)
+@PreAuthorize("hasRole('OPS')")
 public class SupplierController {
 
     private final SupplierService supplierService;

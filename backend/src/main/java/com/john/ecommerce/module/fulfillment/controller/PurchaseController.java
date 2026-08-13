@@ -9,12 +9,14 @@ import com.john.ecommerce.module.fulfillment.dto.PurchaseOrderVO;
 import com.john.ecommerce.module.fulfillment.service.PurchaseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/purchase")
 @RequiredArgsConstructor
 @RequiresModule(ModuleCodes.PURCHASE)
+@PreAuthorize("hasRole('OPS')")
 public class PurchaseController {
 
     private final PurchaseService purchaseService;

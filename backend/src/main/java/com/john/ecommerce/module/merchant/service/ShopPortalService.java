@@ -21,6 +21,9 @@ import com.john.ecommerce.module.trade.dto.OrderVO;
 import com.john.ecommerce.module.trade.entity.Order;
 import com.john.ecommerce.module.trade.mapper.OrderMapper;
 import com.john.ecommerce.module.trade.service.OrderService;
+import com.john.ecommerce.module.payment.entity.SettlementBill;
+import com.john.ecommerce.module.payment.entity.SettlementOrder;
+import com.john.ecommerce.module.payment.service.SettlementBillService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -38,6 +41,7 @@ public class ShopPortalService {
     private final OrderMapper orderMapper;
     private final OrderService orderService;
     private final LogisticsService logisticsService;
+    private final SettlementBillService settlementBillService;
 
     public Page<SpuVO> listProducts(int page, int size, Integer status) {
         Shop shop = merchantService.requireCurrentShop();
@@ -97,11 +101,7 @@ public class ShopPortalService {
 
     public OrderVO getOrder(Long orderId) {
         Shop shop = merchantService.requireCurrentShop();
-        OrderVO vo = orderService.getById(orderId);
-        if (vo.getShopId() == null || !shop.getId().equals(vo.getShopId())) {
-            throw new BizException("订单不属于当前店铺");
-        }
-        return vo;
+        return orderService.getByIdForShop(orderId, shop.getId());
     }
 
     public LogisticsVO ship(Long orderId, LogisticsCreateDTO dto) {
@@ -113,6 +113,16 @@ public class ShopPortalService {
         }
         dto.setOrderId(orderId);
         return logisticsService.createShipment(dto);
+    }
+
+    public Page<SettlementBill> listSettlementBills(int page, int size) {
+        Shop shop = merchantService.requireCurrentShop();
+        return settlementBillService.listBillsForShop(page, size, shop.getId());
+    }
+
+    public Page<SettlementOrder> listSettlementOrders(int page, int size) {
+        Shop shop = merchantService.requireCurrentShop();
+        return settlementBillService.listOrdersForShop(page, size, shop.getId());
     }
 
     private Spu requireOwnedSpu(Long spuId) {

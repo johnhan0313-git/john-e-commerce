@@ -19,12 +19,20 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class LogisticsService {
+
+    @Value("${app.logistics.webhook-secret:}")
+    private String webhookSecret;
 
     private final LogisticsOrderMapper logisticsOrderMapper;
     private final LogisticsItemMapper logisticsItemMapper;
@@ -59,7 +67,8 @@ public class LogisticsService {
     }
 
     @Transactional
-    public void webhook(String trackingNo, LogisticsWebhookDTO dto) {
+    public void webhook(String trackingNo, LogisticsWebhookDTO dto, String timestamp, String signature) {
+        verifyWebhook(trackingNo, dto, timestamp, signature);
         LogisticsOrder lo = logisticsOrderMapper.selectByTrackingNoIgnoreTenant(trackingNo);
         if (lo == null) throw new BizException("物流单不存在: " + trackingNo);
 
@@ -91,6 +100,42 @@ public class LogisticsService {
             } else {
                 TenantContext.setTenantId(prevTenant);
             }
+        }
+    }
+
+    private void verifyWebhook(String trackingNo, LogisticsWebhookDTO dto, String timestamp, String signature) {
+        if (webhookSecret == null || webhookSecret.isBlank()) {
+            throw new BizException(503, "物流回调密钥未配置");
+        }
+        if (timestamp == null || signature == null || dto == null || dto.getStatus() == null) {
+            throw new BizException(400, "物流回调参数不完整");
+        }
+        long ts;
+        try {
+            ts = Long.parseLong(timestamp);
+        } catch (NumberFormatException e) {
+            throw new BizException(400, "物流回调时间戳无效");
+        }
+        if (Math.abs(System.currentTimeMillis() - ts) > 300_000L) {
+            throw new BizException(403, "物流回调已过期");
+        }
+        String payload = trackingNo + "." + dto.getStatus() + "."
+                + (dto.getEventTime() != null ? dto.getEventTime() : "") + "." + timestamp;
+        String expected;
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(webhookSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            StringBuilder hex = new StringBuilder();
+            for (byte b : mac.doFinal(payload.getBytes(StandardCharsets.UTF_8))) {
+                hex.append(String.format("%02x", b));
+            }
+            expected = hex.toString();
+        } catch (Exception e) {
+            throw new BizException(503, "物流回调签名服务不可用");
+        }
+        if (!MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8),
+                signature.trim().toLowerCase().getBytes(StandardCharsets.UTF_8))) {
+            throw new BizException(403, "物流回调签名无效");
         }
     }
 

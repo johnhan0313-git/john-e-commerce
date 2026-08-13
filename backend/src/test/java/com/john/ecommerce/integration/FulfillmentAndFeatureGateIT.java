@@ -18,6 +18,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -74,7 +77,11 @@ class FulfillmentAndFeatureGateIT extends AbstractIntegrationTest {
 
         assertOrderStatus(orderId, OrderStatus.SHIPPED);
 
+        String timestamp = String.valueOf(System.currentTimeMillis());
+        String signature = hmac(tracking + ".1.." + timestamp, "test-logistics-webhook-secret");
         mockMvc.perform(post("/logistics/webhook/{trackingNo}", tracking)
+                        .header("X-Logistics-Timestamp", timestamp)
+                        .header("X-Logistics-Signature", signature)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":1}"))
                 .andExpect(status().isOk())
@@ -88,6 +95,16 @@ class FulfillmentAndFeatureGateIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.code").value(200));
 
         assertOrderStatus(orderId, OrderStatus.COMPLETED);
+    }
+
+    private static String hmac(String payload, String secret) throws Exception {
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+        StringBuilder out = new StringBuilder();
+        for (byte b : mac.doFinal(payload.getBytes(StandardCharsets.UTF_8))) {
+            out.append(String.format("%02x", b));
+        }
+        return out.toString();
     }
 
     @Test

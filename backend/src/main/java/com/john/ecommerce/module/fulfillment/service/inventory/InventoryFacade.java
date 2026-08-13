@@ -7,6 +7,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import com.john.ecommerce.module.trade.entity.Refund;
+import com.john.ecommerce.module.trade.entity.RefundItem;
 
 /**
  * 库存门面：销售预占 / 扣减 / 可售查询；履约批次细节封装在实现内。
@@ -25,6 +27,10 @@ public interface InventoryFacade {
      * 支付成功：将订单锁定库存扣减（locked → 出库），幂等。
      */
     default void consumeForOrder(Order order) {
+        // no-op
+    }
+
+    default void restoreForRefund(Refund refund, Order order, List<RefundItem> items) {
         // no-op
     }
 

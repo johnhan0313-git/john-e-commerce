@@ -61,7 +61,8 @@ class MerchantPortalIT extends AbstractIntegrationTest {
 
     @Test
     void applyAuditProductOrderShipAndRejectForeignOrder() throws Exception {
-        String bearer = TestAuthHelper.loginAndBearer(mockMvc, objectMapper);
+        String bearer = TestAuthHelper.loginAndBearer(mockMvc, objectMapper,
+                TestAuthHelper.DEMO_EMAIL, TestAuthHelper.DEMO_CODE, "merchant");
 
         Long userId = jdbcTemplate.queryForObject(
                 "SELECT id FROM t_user WHERE email = ? AND delete_flag = 0 LIMIT 1",
@@ -219,7 +220,8 @@ class MerchantPortalIT extends AbstractIntegrationTest {
 
     @Test
     void secondShopIsolationAndShopScopedSettlement() throws Exception {
-        String bearer = TestAuthHelper.loginAndBearer(mockMvc, objectMapper);
+        String bearer = TestAuthHelper.loginAndBearer(mockMvc, objectMapper,
+                TestAuthHelper.DEMO_EMAIL, TestAuthHelper.DEMO_CODE, "merchant");
 
         Long userId = jdbcTemplate.queryForObject(
                 "SELECT id FROM t_user WHERE email = ? AND delete_flag = 0 LIMIT 1",

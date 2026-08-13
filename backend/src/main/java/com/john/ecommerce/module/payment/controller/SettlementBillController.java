@@ -8,12 +8,14 @@ import com.john.ecommerce.module.payment.entity.Settlement;
 import com.john.ecommerce.module.payment.entity.SettlementBill;
 import com.john.ecommerce.module.payment.service.SettlementBillService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/settlement-bill")
 @RequiredArgsConstructor
 @RequiresModule(ModuleCodes.SETTLE)
+@PreAuthorize("hasRole('OPS')")
 public class SettlementBillController {
 
     private final SettlementBillService settlementBillService;

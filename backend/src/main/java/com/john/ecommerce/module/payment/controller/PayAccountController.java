@@ -9,12 +9,14 @@ import com.john.ecommerce.common.result.R;
 import com.john.ecommerce.module.payment.entity.PayAccount;
 import com.john.ecommerce.module.payment.mapper.PayAccountMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/pay-account")
 @RequiredArgsConstructor
 @RequiresModule(ModuleCodes.PAYMENT)
+@PreAuthorize("hasRole('OPS')")
 public class PayAccountController {
 
     private final PayAccountMapper payAccountMapper;

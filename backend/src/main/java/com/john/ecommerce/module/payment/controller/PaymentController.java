@@ -29,6 +29,14 @@ public class PaymentController {
         return R.ok();
     }
 
+    @PostMapping("/callback")
+    public R<Void> callback(@RequestParam String payNo,
+                            @RequestHeader("X-Payment-Timestamp") String timestamp,
+                            @RequestHeader("X-Payment-Signature") String signature) {
+        paymentService.channelCallback(payNo, timestamp, signature);
+        return R.ok();
+    }
+
     @GetMapping("/{id}")
     public R<PaymentVO> getById(@PathVariable Long id) {
         return R.ok(paymentService.getById(id));

@@ -2,6 +2,7 @@ package com.john.ecommerce.config;
 
 import com.john.ecommerce.common.context.TenantContext;
 import com.john.ecommerce.common.context.UserContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -41,6 +42,8 @@ import java.util.Set;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    private static final String TENANT_HEADER = "X-Tenant-Id";
+
     @Value("${app.jwt.secret:john-ecommerce-dev-jwt-secret-change-me-32b+}")
     private String jwtSecret;
 
@@ -61,10 +64,11 @@ public class SecurityConfig {
                         "/swagger-ui.html",
                         "/v3/api-docs/**",
                         "/logistics/webhook/**"
+                        ,"/payment/callback", "/refund/callback"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(new JwtAuthFilter(), UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(new JwtAuthFilter(new ObjectMapper()), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
@@ -98,9 +102,22 @@ public class SecurityConfig {
     }
 
     public class JwtAuthFilter extends OncePerRequestFilter {
+        private final ObjectMapper objectMapper;
+
+        JwtAuthFilter(ObjectMapper objectMapper) {
+            this.objectMapper = objectMapper;
+        }
+
         @Override
         protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                         FilterChain filterChain) throws ServletException, IOException {
+            Long headerTenantId;
+            try {
+                headerTenantId = parseTenantHeader(request.getHeader(TENANT_HEADER));
+            } catch (IllegalArgumentException e) {
+                writeError(response, 400, e.getMessage());
+                return;
+            }
             String header = request.getHeader("Authorization");
             if (header != null && header.startsWith("Bearer ")) {
                 try {
@@ -116,6 +133,10 @@ public class SecurityConfig {
                     String userType = claims.get("userType", String.class);
                     Set<String> identities = parseIdentities(claims.get("identities"));
 
+                    if (headerTenantId != null && !headerTenantId.equals(tenantId)) {
+                        writeError(response, 403, "请求租户与登录租户不一致");
+                        return;
+                    }
                     TenantContext.setTenantId(tenantId);
                     UserContext.setUserId(userId);
                     UserContext.setUserType(userType);
@@ -135,6 +156,8 @@ public class SecurityConfig {
                 } catch (Exception ignored) {
                     // Invalid token - continue without auth
                 }
+            } else if (headerTenantId != null) {
+                TenantContext.setTenantId(headerTenantId);
             }
             try {
                 filterChain.doFilter(request, response);
@@ -142,6 +165,27 @@ public class SecurityConfig {
                 TenantContext.clear();
                 UserContext.clear();
             }
+        }
+
+        private Long parseTenantHeader(String raw) {
+            if (raw == null || raw.isBlank()) return null;
+            try {
+                long value = Long.parseLong(raw.trim());
+                if (value <= 0) throw new NumberFormatException();
+                return value;
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("X-Tenant-Id 必须是正整数");
+            }
+        }
+
+        private void writeError(HttpServletResponse response, int code, String message) throws IOException {
+            response.setStatus(code);
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            response.setContentType("application/json;charset=UTF-8");
+            objectMapper.writeValue(response.getWriter(), java.util.Map.of(
+                    "code", code,
+                    "message", message
+            ));
         }
     }
 }

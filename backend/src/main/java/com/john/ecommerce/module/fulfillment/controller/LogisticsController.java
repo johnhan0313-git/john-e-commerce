@@ -32,8 +32,10 @@ public class LogisticsController {
 
     /** 承运商回调：无 JWT，不做模块门禁（Security 已 permitAll）。 */
     @PostMapping("/webhook/{trackingNo}")
-    public R<Void> webhook(@PathVariable String trackingNo, @RequestBody LogisticsWebhookDTO dto) {
-        logisticsService.webhook(trackingNo, dto);
+    public R<Void> webhook(@PathVariable String trackingNo, @RequestBody LogisticsWebhookDTO dto,
+                           @RequestHeader("X-Logistics-Timestamp") String timestamp,
+                           @RequestHeader("X-Logistics-Signature") String signature) {
+        logisticsService.webhook(trackingNo, dto, timestamp, signature);
         return R.ok(null);
     }
 

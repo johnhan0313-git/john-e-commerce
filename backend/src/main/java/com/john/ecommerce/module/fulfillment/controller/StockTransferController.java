@@ -8,12 +8,14 @@ import com.john.ecommerce.module.fulfillment.dto.StockTransferVO;
 import com.john.ecommerce.module.fulfillment.service.StockTransferService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/stock/transfer")
 @RequiredArgsConstructor
 @RequiresModule(ModuleCodes.FULFILLMENT)
+@PreAuthorize("hasRole('OPS')")
 public class StockTransferController {
 
     private final StockTransferService stockTransferService;

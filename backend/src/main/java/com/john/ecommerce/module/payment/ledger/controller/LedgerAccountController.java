@@ -9,6 +9,7 @@ import com.john.ecommerce.module.payment.ledger.entity.LedgerFlow;
 import com.john.ecommerce.module.payment.ledger.entity.LedgerTxn;
 import com.john.ecommerce.module.payment.ledger.service.LedgerService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -16,6 +17,7 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @RequiresModule(ModuleCodes.LEDGER)
+@PreAuthorize("hasRole('OPS')")
 public class LedgerAccountController {
 
     private final LedgerService ledgerService;

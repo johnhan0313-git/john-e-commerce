@@ -2,6 +2,8 @@ package com.john.ecommerce.module.payment.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.DecimalMin;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -17,7 +19,10 @@ public class PaymentCreateDTO {
 
     @Data
     public static class Item {
+        @NotNull(message = "订单不能为空")
         private Long orderId;
+        @NotNull(message = "支付金额不能为空")
+        @DecimalMin(value = "0.01", message = "支付金额必须大于0")
         private BigDecimal amount;
     }
 }

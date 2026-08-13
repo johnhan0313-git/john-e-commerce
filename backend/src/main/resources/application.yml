@@ -30,6 +30,10 @@ spring:
       host: ${SPRING_REDIS_HOST:127.0.0.1}
       port: ${SPRING_REDIS_PORT:16379}
       database: ${SPRING_REDIS_DATABASE:6}
+  flyway:
+    # Existing environments are still migrated by scripts/sql. Enable explicitly during cutover.
+    enabled: ${SPRING_FLYWAY_ENABLED:false}
+    locations: classpath:db/migration
 
 mybatis-plus:
   mapper-locations: classpath:mapper/**/*.xml
@@ -80,6 +84,10 @@ app:
   trade:
     pay-timeout-ms: ${TRADE_PAY_TIMEOUT_MS:1800000}
     unpaid-cancel-delay-ms: ${TRADE_UNPAID_CANCEL_DELAY_MS:60000}
+  payment:
+    webhook-secret: ${PAYMENT_WEBHOOK_SECRET:}
+  logistics:
+    webhook-secret: ${LOGISTICS_WEBHOOK_SECRET:}
 
 logging:
   level:
