@@ -52,6 +52,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -68,8 +69,25 @@ public class SecurityConfig {
                 ).permitAll()
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(new JwtAuthFilter(new ObjectMapper()), UsernamePasswordAuthenticationFilter.class);
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) ->
+                        writeJsonError(response, objectMapper, 401, "未登录或登录已失效"))
+                .accessDeniedHandler((request, response, accessDeniedException) ->
+                        writeJsonError(response, objectMapper, 403, "无权限访问"))
+            )
+            .addFilterBefore(new JwtAuthFilter(objectMapper), UsernamePasswordAuthenticationFilter.class);
         return http.build();
+    }
+
+    private static void writeJsonError(HttpServletResponse response, ObjectMapper objectMapper,
+                                       int code, String message) throws IOException {
+        response.setStatus(code);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.setContentType("application/json;charset=UTF-8");
+        objectMapper.writeValue(response.getWriter(), java.util.Map.of(
+                "code", code,
+                "message", message
+        ));
     }
 
     @Bean
@@ -154,7 +172,9 @@ public class SecurityConfig {
                             new UsernamePasswordAuthenticationToken(userId, null, authorities);
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 } catch (Exception ignored) {
-                    // Invalid token - continue without auth
+                    // 带了无效/过期 token：直接 401，避免前端误当成「有登录态」继续打业务接口
+                    writeError(response, 401, "未登录或登录已失效");
+                    return;
                 }
             } else if (headerTenantId != null) {
                 TenantContext.setTenantId(headerTenantId);
