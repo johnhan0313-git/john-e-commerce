@@ -57,8 +57,9 @@ services:
 
   mall:
     build:
-      context: ./apps/mall
-      dockerfile: Dockerfile
+      # 需 packages/fe-shared（vite alias），context 必须是仓库根
+      context: .
+      dockerfile: apps/mall/Dockerfile
       args:
         NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmmirror.com}
     container_name: john-e-commerce-mall-1
@@ -74,8 +75,8 @@ services:
 
   admin:
     build:
-      context: ./apps/admin
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/admin/Dockerfile
       args:
         NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmmirror.com}
     container_name: john-e-commerce-admin-1
@@ -90,8 +91,8 @@ services:
 
   merchant:
     build:
-      context: ./apps/merchant
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/merchant/Dockerfile
       args:
         NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmmirror.com}
     container_name: john-e-commerce-merchant-1

@@ -18,21 +18,27 @@ services:
       - "host.docker.internal:host-gateway"
 
   mall:
-    build: ./apps/mall
+    build:
+      context: .
+      dockerfile: apps/mall/Dockerfile
     ports:
       - "3022:80"
     depends_on:
       - backend
 
   admin:
-    build: ./apps/admin
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
     ports:
       - "3021:80"
     depends_on:
       - backend
 
   merchant:
-    build: ./apps/merchant
+    build:
+      context: .
+      dockerfile: apps/merchant/Dockerfile
     ports:
       - "3023:80"
     depends_on:
