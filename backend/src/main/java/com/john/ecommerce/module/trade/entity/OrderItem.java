@@ -20,9 +20,9 @@ public class OrderItem extends BaseEntity {
     private String skuImage;
     @TableField(typeHandler = JacksonTypeHandler.class)
     private Map<String, String> specValues;
-    private BigDecimal price;
+    private Long price;
     private Integer quantity;
-    private BigDecimal subtotal;
-    private BigDecimal discountAmount;
-    private BigDecimal payAmount;
+    private Long subtotal;
+    private Long discountAmount;
+    private Long payAmount;
 }

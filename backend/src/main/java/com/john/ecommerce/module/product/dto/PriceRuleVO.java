@@ -10,7 +10,7 @@ public class PriceRuleVO {
     private Long skuId;
     private String ruleType;
     private Integer minQty;
-    private BigDecimal price;
+    private Long price;
     private Long startTime;
     private Long endTime;
     private Integer status;

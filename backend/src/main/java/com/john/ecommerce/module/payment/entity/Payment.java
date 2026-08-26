@@ -23,7 +23,7 @@ public class Payment extends BaseEntity {
     private String currency;
     private Long parentPaymentId;
     private String orderGroupNo;
-    private BigDecimal amount;
+    private Long amount;
     private Integer status;
     private String escrowMode;
     private String escrowStatus;

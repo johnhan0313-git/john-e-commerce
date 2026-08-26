@@ -36,7 +36,7 @@
             :class="{ active: selectedSkuId === s.id }"
             @click="selectedSkuId = s.id"
           >
-            {{ s.skuName || s.skuCode || `SKU ${s.id}` }} · ¥{{ s.price }}
+            {{ s.skuName || s.skuCode || `SKU ${s.id}` }} · ¥{{ formatCents(s.price) }}
           </button>
         </div>
       </div>
@@ -68,6 +68,7 @@ import { useRoute, useRouter } from 'vue-router'
 import client from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { toast } from '@/utils/toast'
+import { formatCents } from '@john/fe-shared/money'
 import type { R, Shop, Sku, Spu } from '@/types'
 
 const route = useRoute()
@@ -83,7 +84,10 @@ const loading = ref(true)
 const adding = ref(false)
 
 const selectedSku = computed(() => skus.value.find((s) => s.id === selectedSkuId.value) || null)
-const displayPrice = computed(() => selectedSku.value?.price ?? skus.value[0]?.price ?? '—')
+const displayPrice = computed(() => {
+  const p = selectedSku.value?.price ?? skus.value[0]?.price
+  return p == null ? '—' : formatCents(p)
+})
 const cover = computed(() => spu.value?.mainImages?.[0])
 const shopMark = computed(() => (shop.value?.name?.trim().charAt(0) || '店').toUpperCase())
 const renderedDetail = computed(() => {

@@ -4,31 +4,26 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.john.ecommerce.common.exception.BizException;
 import com.john.ecommerce.module.fulfillment.entity.*;
 import com.john.ecommerce.module.fulfillment.mapper.*;
-import com.john.ecommerce.module.trade.entity.Order;
-import com.john.ecommerce.module.trade.entity.OrderItem;
+import com.john.ecommerce.module.fulfillment.port.inventory.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.john.ecommerce.module.trade.entity.Refund;
-import com.john.ecommerce.module.trade.entity.RefundItem;
 
 /**
- * Real inventory implementation replacing NoOpInventoryFacade.
- * FEFO/FIFO allocation from StockLot; DEFAULT lot for non-lot-enabled SKUs.
+ * Real inventory implementation. FEFO/FIFO allocation from StockLot; DEFAULT lot for non-lot SKUs.
  */
 @Slf4j
 @Service
 @Primary
 @RequiredArgsConstructor
-public class InventoryService implements InventoryFacade {
+public class InventoryService implements InventoryPort {
 
     private static final String DEFAULT_LOT = "DEFAULT";
 
@@ -39,16 +34,19 @@ public class InventoryService implements InventoryFacade {
 
     @Override
     @Transactional
-    public void lockForOrder(Order order, List<OrderItem> items) {
-        Long warehouseId = order.getWarehouseId();
-        if (warehouseId == null) return; // no warehouse assigned yet
+    public void lockForOrder(InventoryLockCommand command) {
+        if (command == null || command.warehouseId() == null) return;
+        Long warehouseId = command.warehouseId();
+        Long orderId = command.orderId();
+        List<InventoryLine> lines = command.lines();
+        if (lines == null || lines.isEmpty()) return;
 
-        for (OrderItem item : items) {
-            int remaining = item.getQuantity();
-            List<StockLot> lots = selectAllocatableLots(warehouseId, item.getSkuId());
+        for (InventoryLine line : lines) {
+            int remaining = line.quantity();
+            List<StockLot> lots = selectAllocatableLots(warehouseId, line.skuId());
             if (lots.isEmpty()) {
-                ensureDefaultLot(warehouseId, item.getSkuId());
-                lots = selectAllocatableLots(warehouseId, item.getSkuId());
+                ensureDefaultLot(warehouseId, line.skuId());
+                lots = selectAllocatableLots(warehouseId, line.skuId());
             }
 
             for (StockLot lot : lots) {
@@ -62,24 +60,23 @@ public class InventoryService implements InventoryFacade {
                 stockLotMapper.updateById(lot);
 
                 StockLockDetail detail = new StockLockDetail();
-                detail.setOrderId(order.getId());
-                detail.setOrderItemId(item.getId());
+                detail.setOrderId(orderId);
                 detail.setWarehouseId(warehouseId);
-                detail.setSkuId(item.getSkuId());
+                detail.setSkuId(line.skuId());
                 detail.setLotId(lot.getId());
                 detail.setLotNo(lot.getLotNo());
                 detail.setQty(alloc);
                 detail.setStatus(LOCK_STATUS_LOCKED);
                 stockLockDetailMapper.insert(detail);
 
-                writeLog(warehouseId, item.getSkuId(), lot.getLotNo(), "LOCK", -alloc,
-                        beforeLot, lot.getAvailable(), "ORDER", order.getId(), null);
+                writeLog(warehouseId, line.skuId(), lot.getLotNo(), "LOCK", -alloc,
+                        beforeLot, lot.getAvailable(), "ORDER", orderId, null);
                 remaining -= alloc;
             }
             if (remaining > 0) {
-                throw new BizException("库存不足: skuId=" + item.getSkuId() + " 缺少" + remaining);
+                throw new BizException("库存不足: skuId=" + line.skuId() + " 缺少" + remaining);
             }
-            updateSummary(warehouseId, item.getSkuId());
+            updateSummary(warehouseId, line.skuId());
         }
     }
 
@@ -151,10 +148,12 @@ public class InventoryService implements InventoryFacade {
 
     @Override
     @Transactional
-    public void unlockForOrder(Order order) {
+    public void unlockForOrder(InventoryOrderRef orderRef) {
+        if (orderRef == null || orderRef.orderId() == null) return;
+        Long orderId = orderRef.orderId();
         List<StockLockDetail> details = stockLockDetailMapper.selectList(
                 new LambdaQueryWrapper<StockLockDetail>()
-                        .eq(StockLockDetail::getOrderId, order.getId())
+                        .eq(StockLockDetail::getOrderId, orderId)
                         .eq(StockLockDetail::getStatus, LOCK_STATUS_LOCKED));
         for (StockLockDetail d : details) {
             StockLot lot = stockLotMapper.selectById(d.getLotId());
@@ -164,7 +163,7 @@ public class InventoryService implements InventoryFacade {
                 lot.setLocked(Math.max(0, lot.getLocked() - d.getQty()));
                 stockLotMapper.updateById(lot);
                 writeLog(d.getWarehouseId(), d.getSkuId(), d.getLotNo(), "UNLOCK", d.getQty(),
-                        before, lot.getAvailable(), "ORDER", order.getId(), null);
+                        before, lot.getAvailable(), "ORDER", orderId, null);
             }
             d.setStatus(LOCK_STATUS_RELEASED);
             stockLockDetailMapper.updateById(d);
@@ -174,20 +173,21 @@ public class InventoryService implements InventoryFacade {
 
     @Override
     @Transactional
-    public void consumeForOrder(Order order) {
-        if (order == null || order.getId() == null) return;
+    public void consumeForOrder(InventoryOrderRef orderRef) {
+        if (orderRef == null || orderRef.orderId() == null) return;
+        Long orderId = orderRef.orderId();
         List<StockLockDetail> details = stockLockDetailMapper.selectList(
                 new LambdaQueryWrapper<StockLockDetail>()
-                        .eq(StockLockDetail::getOrderId, order.getId())
+                        .eq(StockLockDetail::getOrderId, orderId)
                         .eq(StockLockDetail::getStatus, LOCK_STATUS_LOCKED));
         if (details.isEmpty()) {
-            log.warn("consumeForOrder: no locked details for orderId={}", order.getId());
+            log.warn("consumeForOrder: no locked details for orderId={}", orderId);
             return;
         }
         for (StockLockDetail d : details) {
             StockLot lot = stockLotMapper.selectById(d.getLotId());
             if (lot == null) {
-                log.warn("consumeForOrder: lot missing lotId={} orderId={}", d.getLotId(), order.getId());
+                log.warn("consumeForOrder: lot missing lotId={} orderId={}", d.getLotId(), orderId);
                 d.setStatus(LOCK_STATUS_CONSUMED);
                 stockLockDetailMapper.updateById(d);
                 continue;
@@ -199,9 +199,8 @@ public class InventoryService implements InventoryFacade {
             }
             lot.setLocked(beforeLocked - qty);
             stockLotMapper.updateById(lot);
-            // before/after 记录 locked 口径，便于对账
             writeLog(d.getWarehouseId(), d.getSkuId(), d.getLotNo(), "CONSUME", -qty,
-                    beforeLocked, lot.getLocked(), "ORDER", order.getId(), null);
+                    beforeLocked, lot.getLocked(), "ORDER", orderId, null);
             d.setStatus(LOCK_STATUS_CONSUMED);
             stockLockDetailMapper.updateById(d);
             updateSummary(d.getWarehouseId(), d.getSkuId());
@@ -210,19 +209,21 @@ public class InventoryService implements InventoryFacade {
 
     @Override
     @Transactional
-    public void restoreForRefund(Refund refund, Order order, List<RefundItem> items) {
-        if (refund == null || order == null || order.getWarehouseId() == null || items == null) return;
-        for (RefundItem item : items) {
-            if (item.getStockRestored() != null && item.getStockRestored() == 1) continue;
-            StockLot lot = ensureDefaultLot(order.getWarehouseId(), item.getSkuId());
+    public void restoreForRefund(InventoryRestoreCommand command) {
+        if (command == null || command.warehouseId() == null || command.lines() == null) return;
+        Long warehouseId = command.warehouseId();
+        Long refundId = command.refundId();
+        for (InventoryRefundLine line : command.lines()) {
+            if (line == null || line.skuId() == null) continue;
+            int qty = line.quantity();
+            if (qty <= 0) continue;
+            StockLot lot = ensureDefaultLot(warehouseId, line.skuId());
             int before = lot.getAvailable() != null ? lot.getAvailable() : 0;
-            int qty = item.getQuantity() != null ? item.getQuantity() : 0;
             lot.setAvailable(before + qty);
             stockLotMapper.updateById(lot);
-            writeLog(order.getWarehouseId(), item.getSkuId(), lot.getLotNo(), "REFUND_RESTORE", qty,
-                    before, lot.getAvailable(), "REFUND", refund.getId(), null);
-            item.setStockRestored(1);
-            updateSummary(order.getWarehouseId(), item.getSkuId());
+            writeLog(warehouseId, line.skuId(), lot.getLotNo(), "REFUND_RESTORE", qty,
+                    before, lot.getAvailable(), "REFUND", refundId, null);
+            updateSummary(warehouseId, line.skuId());
         }
     }
 
@@ -237,7 +238,6 @@ public class InventoryService implements InventoryFacade {
                     .toList();
 
             if (itemLots.isEmpty()) {
-                // single default lot
                 StockLot lot = ensureDefaultLot(stockOrder.getWarehouseId(), soItem.getSkuId());
                 applyLotChange(stockOrder, lot, soItem.getQty());
             } else {
@@ -268,10 +268,7 @@ public class InventoryService implements InventoryFacade {
                 before, lot.getAvailable(), "STOCK_ORDER", so.getId(), null);
     }
 
-    // --- lot helpers ---
-
     private List<StockLot> selectAllocatableLots(Long warehouseId, Long skuId) {
-        // FEFO: order by expire_date ASC (nulls last), then inbound_at ASC (FIFO)
         List<StockLot> lots = stockLotMapper.selectList(new LambdaQueryWrapper<StockLot>()
                 .eq(StockLot::getWarehouseId, warehouseId)
                 .eq(StockLot::getSkuId, skuId)
@@ -280,10 +277,6 @@ public class InventoryService implements InventoryFacade {
         return lots;
     }
 
-    /**
-     * FEFO 比较：更早过期优先；过期日相同则更早入库优先；null 视为最晚。
-     * package-visible 便于单测。
-     */
     static int compareFefo(StockLot a, StockLot b) {
         long expA = a.getExpireDate() != null ? a.getExpireDate() : Long.MAX_VALUE;
         long expB = b.getExpireDate() != null ? b.getExpireDate() : Long.MAX_VALUE;

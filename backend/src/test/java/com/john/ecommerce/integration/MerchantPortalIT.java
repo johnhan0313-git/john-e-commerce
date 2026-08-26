@@ -23,8 +23,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.math.BigDecimal;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -366,15 +364,15 @@ class MerchantPortalIT extends AbstractIntegrationTest {
         JsonNode order = objectMapper.readTree(orderRes.getResponse().getContentAsString())
                 .path("data").path("orders").get(0);
         long orderId = order.path("id").asLong();
-        BigDecimal payAmount = order.path("payAmount").decimalValue();
+        long payAmount = order.path("payAmount").asLong();
         assertThat(order.path("shopId").asLong()).isEqualTo(shopB);
 
         MvcResult payRes = mockMvc.perform(post("/payment")
                         .header("Authorization", bearer)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"methodCode":"MOCK","currency":"CNY","items":[{"orderId":%d,"amount":%s}]}
-                                """.formatted(orderId, payAmount.toPlainString())))
+                                {"methodCode":"MOCK","currency":"CNY","items":[{"orderId":%d,"amount":%d}]}
+                                """.formatted(orderId, payAmount)))
                 .andExpect(status().isOk())
                 .andReturn();
         JsonNode payment = objectMapper.readTree(payRes.getResponse().getContentAsString()).path("data");

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.john.ecommerce.common.module.ModuleCodes;
 import com.john.ecommerce.common.module.RequiresModule;
 import com.john.ecommerce.common.result.R;
+import com.john.ecommerce.module.trade.application.PlaceOrderApplication;
 import com.john.ecommerce.module.trade.dto.OrderCreateDTO;
 import com.john.ecommerce.module.trade.dto.OrderGroupVO;
 import com.john.ecommerce.module.trade.dto.OrderVO;
@@ -18,11 +19,12 @@ import org.springframework.web.bind.annotation.*;
 @RequiresModule(ModuleCodes.TRADE)
 public class OrderController {
 
+    private final PlaceOrderApplication placeOrderApplication;
     private final OrderService orderService;
 
     @PostMapping
     public R<OrderGroupVO> create(@Valid @RequestBody OrderCreateDTO dto) {
-        return R.ok(orderService.create(dto));
+        return R.ok(placeOrderApplication.create(dto));
     }
 
     @GetMapping("/group/{orderGroupNo}")

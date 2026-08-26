@@ -1,7 +1,6 @@
 package com.john.ecommerce.module.activity.service.engine;
 
 import lombok.Data;
-import java.math.BigDecimal;
 
 @Data
 public class PromoCandidate {
@@ -11,6 +10,6 @@ public class PromoCandidate {
     private Boolean stackable;
     private String promoStage;
     private Integer priority;
-    private BigDecimal discountAmount;
+    private Long discountAmount;
     private String description;
 }

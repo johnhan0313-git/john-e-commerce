@@ -15,5 +15,5 @@ public class PaymentFundItem extends BaseEntity {
     private String fundType;
     private Long ledgerAccountId;
     private Long channelConfigId;
-    private BigDecimal amount;
+    private Long amount;
 }

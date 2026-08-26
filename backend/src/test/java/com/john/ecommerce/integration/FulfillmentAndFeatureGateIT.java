@@ -17,7 +17,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -51,7 +50,7 @@ class FulfillmentAndFeatureGateIT extends AbstractIntegrationTest {
         JsonNode orderGroup = createOrder(catalog.skuId(), 1);
         Long orderId = orderGroup.path("orders").get(0).path("id").asLong();
         Long orderItemId = orderGroup.path("orders").get(0).path("items").get(0).path("id").asLong();
-        BigDecimal payAmount = orderGroup.path("orders").get(0).path("payAmount").decimalValue();
+        Long payAmount = orderGroup.path("orders").get(0).path("payAmount").asLong();
 
         JsonNode payment = createMockPayment(orderId, payAmount);
         mockMvc.perform(post("/payment/mock-callback")
@@ -153,14 +152,14 @@ class FulfillmentAndFeatureGateIT extends AbstractIntegrationTest {
         return objectMapper.readTree(result.getResponse().getContentAsString()).path("data");
     }
 
-    private JsonNode createMockPayment(Long orderId, BigDecimal amount) throws Exception {
+    private JsonNode createMockPayment(Long orderId, Long amount) throws Exception {
         String body = """
                 {
                   "methodCode":"MOCK",
                   "currency":"CNY",
-                  "items":[{"orderId":%d,"amount":%s}]
+                  "items":[{"orderId":%d,"amount":%d}]
                 }
-                """.formatted(orderId, amount.toPlainString());
+                """.formatted(orderId, amount);
         MvcResult result = mockMvc.perform(post("/payment")
                         .header("Authorization", bearer)
                         .contentType(MediaType.APPLICATION_JSON)

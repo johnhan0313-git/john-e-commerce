@@ -1,13 +1,12 @@
 package com.john.ecommerce.module.payment.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.john.ecommerce.common.exception.BizException;
 import com.john.ecommerce.common.module.ModuleCodes;
 import com.john.ecommerce.common.module.RequiresModule;
 import com.john.ecommerce.common.result.R;
-import com.john.ecommerce.module.payment.entity.PayAccount;
-import com.john.ecommerce.module.payment.mapper.PayAccountMapper;
+import com.john.ecommerce.module.payment.dto.PayAccountCreateDTO;
+import com.john.ecommerce.module.payment.dto.PayAccountVO;
+import com.john.ecommerce.module.payment.service.PayAccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -19,40 +18,32 @@ import org.springframework.web.bind.annotation.*;
 @PreAuthorize("hasRole('OPS')")
 public class PayAccountController {
 
-    private final PayAccountMapper payAccountMapper;
+    private final PayAccountService payAccountService;
 
     @PostMapping
-    public R<PayAccount> create(@RequestBody PayAccount account) {
-        payAccountMapper.insert(account);
-        return R.ok(account);
+    public R<PayAccountVO> create(@RequestBody PayAccountCreateDTO dto) {
+        return R.ok(payAccountService.create(dto));
     }
 
     @GetMapping("/{id}")
-    public R<PayAccount> getById(@PathVariable Long id) {
-        PayAccount account = payAccountMapper.selectById(id);
-        if (account == null) throw new BizException("支付账户不存在");
-        return R.ok(account);
+    public R<PayAccountVO> getById(@PathVariable Long id) {
+        return R.ok(payAccountService.getById(id));
     }
 
     @GetMapping
-    public R<Page<PayAccount>> list(@RequestParam(defaultValue = "1") int page,
-                                    @RequestParam(defaultValue = "20") int size) {
-        return R.ok(payAccountMapper.selectPage(new Page<>(page, size),
-                new LambdaQueryWrapper<PayAccount>().orderByDesc(PayAccount::getCreatedAt)));
+    public R<Page<PayAccountVO>> list(@RequestParam(defaultValue = "1") int page,
+                                      @RequestParam(defaultValue = "20") int size) {
+        return R.ok(payAccountService.list(page, size));
     }
 
     @PutMapping("/{id}")
-    public R<PayAccount> update(@PathVariable Long id, @RequestBody PayAccount account) {
-        PayAccount existing = payAccountMapper.selectById(id);
-        if (existing == null) throw new BizException("支付账户不存在");
-        account.setId(id);
-        payAccountMapper.updateById(account);
-        return R.ok(payAccountMapper.selectById(id));
+    public R<PayAccountVO> update(@PathVariable Long id, @RequestBody PayAccountCreateDTO dto) {
+        return R.ok(payAccountService.update(id, dto));
     }
 
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
-        payAccountMapper.deleteById(id);
+        payAccountService.delete(id);
         return R.ok();
     }
 }

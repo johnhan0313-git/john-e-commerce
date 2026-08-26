@@ -2,7 +2,6 @@ package com.john.ecommerce.module.activity.service.engine;
 
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,7 +37,7 @@ class StackingPolicyTest {
         c.setStackGroup(group);
         c.setStackable(stackable);
         c.setPriority(priority);
-        c.setDiscountAmount(new BigDecimal(discount));
+        c.setDiscountAmount(Long.parseLong(discount));
         c.setActivityType("TEST");
         return c;
     }

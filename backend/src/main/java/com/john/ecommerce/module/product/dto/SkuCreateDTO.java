@@ -14,8 +14,8 @@ public class SkuCreateDTO {
     private String skuName;
     private Map<String, String> specValues;
     @NotNull(message = "价格不能为空")
-    private BigDecimal price;
-    private BigDecimal costPrice;
+    private Long price;
+    private Long costPrice;
     private Boolean lotEnabled;
     private BigDecimal weight;
     private String barcode;

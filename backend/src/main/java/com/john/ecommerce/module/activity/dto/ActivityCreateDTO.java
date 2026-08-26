@@ -23,7 +23,7 @@ public class ActivityCreateDTO {
     private Integer priority;
     @NotNull(message = "活动规则不能为空")
     private Map<String, Object> ruleConfig;
-    private BigDecimal budget;
+    private Long budget;
     private Integer totalQuota;
     private List<ScopeDTO> scopes;
 
@@ -33,7 +33,7 @@ public class ActivityCreateDTO {
         private Long spuId;
         private Long categoryId;
         private Long skuId;
-        private BigDecimal activityPrice;
+        private Long activityPrice;
         private Map<String, Object> extraConfig;
     }
 }

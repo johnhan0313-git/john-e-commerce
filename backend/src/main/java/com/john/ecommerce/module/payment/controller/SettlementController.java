@@ -6,7 +6,7 @@ import com.john.ecommerce.common.module.RequiresModule;
 import com.john.ecommerce.common.result.R;
 import com.john.ecommerce.module.payment.dto.SettlementBillVO;
 import com.john.ecommerce.module.payment.dto.SettlementOrderVO;
-import com.john.ecommerce.module.payment.service.SettlementService;
+import com.john.ecommerce.module.payment.service.SettlementBillService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -18,14 +18,14 @@ import org.springframework.web.bind.annotation.*;
 @PreAuthorize("hasRole('OPS')")
 public class SettlementController {
 
-    private final SettlementService settlementService;
+    private final SettlementBillService settlementBillService;
 
     @GetMapping("/order")
     public R<Page<SettlementOrderVO>> listOrders(@RequestParam(defaultValue = "1") int page,
-                                                  @RequestParam(defaultValue = "20") int size,
-                                                  @RequestParam(required = false) Long shopId,
-                                                  @RequestParam(required = false) Long merchantId) {
-        return R.ok(settlementService.listOrders(page, size, shopId, merchantId));
+                                                 @RequestParam(defaultValue = "20") int size,
+                                                 @RequestParam(required = false) Long shopId,
+                                                 @RequestParam(required = false) Long merchantId) {
+        return R.ok(settlementBillService.listOrders(page, size, shopId, merchantId));
     }
 
     @GetMapping("/bill")
@@ -33,12 +33,12 @@ public class SettlementController {
                                                @RequestParam(defaultValue = "20") int size,
                                                @RequestParam(required = false) Long shopId,
                                                @RequestParam(required = false) Long merchantId) {
-        return R.ok(settlementService.listBills(page, size, shopId, merchantId));
+        return R.ok(settlementBillService.listBills(page, size, shopId, merchantId));
     }
 
     @PostMapping("/bill/{id}/settle")
     public R<Void> settleBill(@PathVariable Long id) {
-        settlementService.settleBill(id);
+        settlementBillService.settleBill(id);
         return R.ok();
     }
 }

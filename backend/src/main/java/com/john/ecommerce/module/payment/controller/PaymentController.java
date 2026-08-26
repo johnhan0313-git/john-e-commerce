@@ -3,6 +3,7 @@ package com.john.ecommerce.module.payment.controller;
 import com.john.ecommerce.common.module.ModuleCodes;
 import com.john.ecommerce.common.module.RequiresModule;
 import com.john.ecommerce.common.result.R;
+import com.john.ecommerce.module.payment.application.CreatePaymentApplication;
 import com.john.ecommerce.module.payment.dto.PaymentCreateDTO;
 import com.john.ecommerce.module.payment.dto.PaymentVO;
 import com.john.ecommerce.module.payment.service.PaymentService;
@@ -16,11 +17,12 @@ import org.springframework.web.bind.annotation.*;
 @RequiresModule(ModuleCodes.PAYMENT)
 public class PaymentController {
 
+    private final CreatePaymentApplication createPaymentApplication;
     private final PaymentService paymentService;
 
     @PostMapping
     public R<PaymentVO> create(@Valid @RequestBody PaymentCreateDTO dto) {
-        return R.ok(paymentService.createPayment(dto));
+        return R.ok(createPaymentApplication.create(dto));
     }
 
     @PostMapping("/mock-callback")

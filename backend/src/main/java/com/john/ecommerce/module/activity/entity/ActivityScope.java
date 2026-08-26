@@ -18,7 +18,7 @@ public class ActivityScope extends BaseEntity {
     private Long spuId;
     private Long categoryId;
     private Long skuId;
-    private BigDecimal activityPrice;
+    private Long activityPrice;
     @TableField(typeHandler = JacksonTypeHandler.class)
     private Map<String, Object> extraConfig;
 }

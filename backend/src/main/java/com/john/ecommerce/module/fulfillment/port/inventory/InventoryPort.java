@@ -1,36 +1,31 @@
-package com.john.ecommerce.module.fulfillment.service.inventory;
-
-import com.john.ecommerce.module.trade.entity.Order;
-import com.john.ecommerce.module.trade.entity.OrderItem;
+package com.john.ecommerce.module.fulfillment.port.inventory;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import com.john.ecommerce.module.trade.entity.Refund;
-import com.john.ecommerce.module.trade.entity.RefundItem;
 
 /**
  * 库存门面：销售预占 / 扣减 / 可售查询；履约批次细节封装在实现内。
+ * 跨域调用只传 command / ref DTO，不传 trade 实体。
  */
-public interface InventoryFacade {
+public interface InventoryPort {
 
     int LOCK_STATUS_RELEASED = 0;
     int LOCK_STATUS_LOCKED = 1;
     int LOCK_STATUS_CONSUMED = 2;
 
-    void lockForOrder(Order order, List<OrderItem> items);
+    void lockForOrder(InventoryLockCommand command);
 
-    void unlockForOrder(Order order);
+    void unlockForOrder(InventoryOrderRef orderRef);
 
     /**
      * 支付成功：将订单锁定库存扣减（locked → 出库），幂等。
      */
-    default void consumeForOrder(Order order) {
+    default void consumeForOrder(InventoryOrderRef orderRef) {
         // no-op
     }
 
-    default void restoreForRefund(Refund refund, Order order, List<RefundItem> items) {
+    default void restoreForRefund(InventoryRestoreCommand command) {
         // no-op
     }
 

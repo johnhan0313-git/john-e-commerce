@@ -3,8 +3,8 @@ package com.john.ecommerce.module.payment.controller;
 import com.john.ecommerce.common.module.ModuleCodes;
 import com.john.ecommerce.common.module.RequiresModule;
 import com.john.ecommerce.common.result.R;
-import com.john.ecommerce.module.payment.entity.SplitDetail;
-import com.john.ecommerce.module.payment.entity.SplitOrder;
+import com.john.ecommerce.module.payment.dto.SplitDetailDTO;
+import com.john.ecommerce.module.payment.dto.SplitOrderVO;
 import com.john.ecommerce.module.payment.service.SplitService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,7 +22,7 @@ public class SplitController {
     private final SplitService splitService;
 
     @PostMapping
-    public R<SplitOrder> create(@RequestParam Long paymentId, @RequestBody List<SplitDetail> details) {
+    public R<SplitOrderVO> create(@RequestParam Long paymentId, @RequestBody List<SplitDetailDTO> details) {
         return R.ok(splitService.createSplit(paymentId, details));
     }
 
@@ -33,7 +33,7 @@ public class SplitController {
     }
 
     @GetMapping
-    public R<List<SplitOrder>> listByPayment(@RequestParam Long paymentId) {
+    public R<List<SplitOrderVO>> listByPayment(@RequestParam Long paymentId) {
         return R.ok(splitService.listByPayment(paymentId));
     }
 }

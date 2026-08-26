@@ -21,7 +21,14 @@ public class OrderStateMachine {
         TRANSITIONS.put(OrderStatus.SHIPPED, EnumSet.of(OrderStatus.DELIVERED, OrderStatus.REFUNDING));
         TRANSITIONS.put(OrderStatus.DELIVERED, EnumSet.of(OrderStatus.COMPLETED, OrderStatus.REFUNDING));
         TRANSITIONS.put(OrderStatus.COMPLETED, EnumSet.of(OrderStatus.REFUNDING));
-        TRANSITIONS.put(OrderStatus.REFUNDING, EnumSet.of(OrderStatus.REFUNDED, OrderStatus.PAID, OrderStatus.COMPLETED));
+        // Reject / partial-refund restore may return to any pre-refund fulfillment state.
+        TRANSITIONS.put(OrderStatus.REFUNDING, EnumSet.of(
+                OrderStatus.REFUNDED,
+                OrderStatus.PAID,
+                OrderStatus.PARTIAL_SHIPPED,
+                OrderStatus.SHIPPED,
+                OrderStatus.DELIVERED,
+                OrderStatus.COMPLETED));
         TRANSITIONS.put(OrderStatus.CANCELLED, EnumSet.noneOf(OrderStatus.class));
         TRANSITIONS.put(OrderStatus.REFUNDED, EnumSet.noneOf(OrderStatus.class));
     }

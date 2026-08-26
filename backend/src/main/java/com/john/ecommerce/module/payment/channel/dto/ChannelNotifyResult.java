@@ -9,6 +9,6 @@ public class ChannelNotifyResult {
     private boolean success;
     private String payNo;
     private String channelTradeNo;
-    private BigDecimal amount;
+    private Long amount;
     private String message;
 }

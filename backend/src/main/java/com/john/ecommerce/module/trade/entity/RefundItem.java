@@ -15,6 +15,6 @@ public class RefundItem extends BaseEntity {
     private Long orderItemId;
     private Long skuId;
     private Integer quantity;
-    private BigDecimal amount;
+    private Long amount;
     private Integer stockRestored;
 }

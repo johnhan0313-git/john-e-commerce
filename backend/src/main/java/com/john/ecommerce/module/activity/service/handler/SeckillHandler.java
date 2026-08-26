@@ -9,7 +9,6 @@ import com.john.ecommerce.module.activity.service.engine.PromoContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,16 +30,17 @@ public class SeckillHandler implements ActivityTypeHandler {
         List<ActivityScope> scopes = scopeMapper.selectList(
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ActivityScope>()
                         .eq(ActivityScope::getActivityId, activity.getId()));
-        Map<Long, BigDecimal> skuPrices = scopes.stream()
+        Map<Long, Long> skuPrices = scopes.stream()
                 .filter(s -> s.getSkuId() != null && s.getActivityPrice() != null)
                 .collect(Collectors.toMap(ActivityScope::getSkuId, ActivityScope::getActivityPrice, (a, b) -> a));
 
         List<PromoCandidate> result = new ArrayList<>();
         for (PromoContext.PromoLine line : context.getLines()) {
-            BigDecimal activityPrice = skuPrices.get(line.getSkuId());
+            Long activityPrice = skuPrices.get(line.getSkuId());
             if (activityPrice == null) continue;
-            BigDecimal diff = line.getUnitPrice().subtract(activityPrice).multiply(BigDecimal.valueOf(line.getQuantity()));
-            if (diff.compareTo(BigDecimal.ZERO) <= 0) continue;
+            long unit = line.getUnitPrice() != null ? line.getUnitPrice() : 0L;
+            long diff = (unit - activityPrice) * line.getQuantity();
+            if (diff <= 0) continue;
             PromoCandidate c = baseCandidate(activity);
             c.setDiscountAmount(diff);
             c.setDescription("秒杀价");

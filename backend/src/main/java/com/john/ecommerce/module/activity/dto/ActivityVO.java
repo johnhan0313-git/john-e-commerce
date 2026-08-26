@@ -20,8 +20,8 @@ public class ActivityVO {
     private String statusLabel;
     private Integer priority;
     private Map<String, Object> ruleConfig;
-    private BigDecimal budget;
-    private BigDecimal usedBudget;
+    private Long budget;
+    private Long usedBudget;
     private Integer totalQuota;
     private Integer usedQuota;
     private List<ScopeVO> scopes;
@@ -34,6 +34,6 @@ public class ActivityVO {
         private Long spuId;
         private Long categoryId;
         private Long skuId;
-        private BigDecimal activityPrice;
+        private Long activityPrice;
     }
 }

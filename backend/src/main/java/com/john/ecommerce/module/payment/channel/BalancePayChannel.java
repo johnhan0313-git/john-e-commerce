@@ -22,7 +22,7 @@ public class BalancePayChannel implements PayChannel {
     @Override
     public PrepayResult prepay(PaymentContext ctx) {
         Long userId = ctx.getPayment().getCreatedBy();
-        long amountCents = ctx.getPayment().getAmount().movePointRight(2).longValue();
+        long amountCents = ctx.getPayment().getAmount() != null ? ctx.getPayment().getAmount() : 0L;
 
         LedgerAccount account = ledgerService.openAccount("USER", userId, "USER_BALANCE", "CNY");
         // 余额支付：预下单即扣可用余额（与旧 freezeDebit 语义对齐）
@@ -47,7 +47,7 @@ public class BalancePayChannel implements PayChannel {
     @Override
     public RefundResult refund(RefundContext ctx) {
         Long userId = ctx.getPayment().getCreatedBy();
-        long amountCents = ctx.getRefundPayment().getAmount().movePointRight(2).longValue();
+        long amountCents = ctx.getRefundPayment().getAmount() != null ? ctx.getRefundPayment().getAmount() : 0L;
 
         LedgerAccount account = ledgerService.openAccount("USER", userId, "USER_BALANCE", "CNY");
         ledgerService.credit(account.getId(), amountCents, "REFUND", "REFUND",

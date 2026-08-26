@@ -6,7 +6,6 @@ import com.john.ecommerce.module.activity.service.engine.PromoCandidate;
 import com.john.ecommerce.module.activity.service.engine.PromoContext;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -20,18 +19,18 @@ public class FullReductionHandler implements ActivityTypeHandler {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public List<PromoCandidate> evaluate(Activity activity, PromoContext context) {
         Map<String, Object> rule = activity.getRuleConfig();
         if (rule == null) return List.of();
-        BigDecimal threshold = toDecimal(rule.get("threshold"));
-        BigDecimal reduction = toDecimal(rule.get("reduction"));
+        Long threshold = toLong(rule.get("threshold"));
+        Long reduction = toLong(rule.get("reduction"));
         if (threshold == null || reduction == null) return List.of();
 
-        BigDecimal orderTotal = context.getLines().stream()
+        long orderTotal = context.getLines().stream()
                 .map(PromoContext.PromoLine::getLineTotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        if (orderTotal.compareTo(threshold) < 0) return List.of();
+                .map(t -> t != null ? t : 0L)
+                .reduce(0L, Long::sum);
+        if (orderTotal < threshold) return List.of();
 
         PromoCandidate c = new PromoCandidate();
         c.setActivityId(activity.getId());
@@ -45,9 +44,9 @@ public class FullReductionHandler implements ActivityTypeHandler {
         return new ArrayList<>(List.of(c));
     }
 
-    private BigDecimal toDecimal(Object v) {
+    private Long toLong(Object v) {
         if (v == null) return null;
-        if (v instanceof Number n) return BigDecimal.valueOf(n.doubleValue());
-        return new BigDecimal(v.toString());
+        if (v instanceof Number n) return n.longValue();
+        return Long.parseLong(v.toString());
     }
 }

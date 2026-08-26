@@ -16,7 +16,7 @@ public class PurchaseOrder extends BaseEntity {
     private Long warehouseId;
     private Long refActivityId;
     private String status;
-    private BigDecimal totalAmount;
+    private Long totalAmount;
     private String remark;
     private Long approvedAt;
     private Long finishedAt;

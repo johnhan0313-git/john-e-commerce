@@ -23,8 +23,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.math.BigDecimal;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -59,7 +57,7 @@ class MoneyPathIT extends AbstractIntegrationTest {
 
         JsonNode orderGroup = createOrder(catalog.skuId(), 2);
         Long orderId = orderGroup.path("orders").get(0).path("id").asLong();
-        BigDecimal payAmount = orderGroup.path("orders").get(0).path("payAmount").decimalValue();
+        Long payAmount = orderGroup.path("orders").get(0).path("payAmount").asLong();
 
         assertThat(seeder.lockedQty(catalog.skuId())).isEqualTo(2);
         assertThat(seeder.availableQty(catalog.skuId())).isEqualTo(8);
@@ -83,7 +81,7 @@ class MoneyPathIT extends AbstractIntegrationTest {
             Order order = orderMapper.selectById(orderId);
             assertThat(order.getPayStatus()).isEqualTo(PayStatus.PAID.getCode());
             assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID.getCode());
-            assertThat(order.getPaidAmount()).isEqualByComparingTo(payAmount);
+            assertThat(order.getPaidAmount()).isEqualTo(payAmount);
             assertThat(order.getPayDeadline()).isNotNull();
 
             SettlementOrder so = settlementOrderMapper.selectOne(new LambdaQueryWrapper<SettlementOrder>()
@@ -162,14 +160,14 @@ class MoneyPathIT extends AbstractIntegrationTest {
         return objectMapper.readTree(result.getResponse().getContentAsString()).path("data");
     }
 
-    private JsonNode createMockPayment(Long orderId, BigDecimal amount) throws Exception {
+    private JsonNode createMockPayment(Long orderId, Long amount) throws Exception {
         String body = """
                 {
                   "methodCode":"MOCK",
                   "currency":"CNY",
-                  "items":[{"orderId":%d,"amount":%s}]
+                  "items":[{"orderId":%d,"amount":%d}]
                 }
-                """.formatted(orderId, amount.toPlainString());
+                """.formatted(orderId, amount);
         MvcResult result = mockMvc.perform(post("/payment")
                         .header("Authorization", bearer)
                         .contentType(MediaType.APPLICATION_JSON)

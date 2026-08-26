@@ -88,6 +88,10 @@ app:
     webhook-secret: ${PAYMENT_WEBHOOK_SECRET:}
   logistics:
     webhook-secret: ${LOGISTICS_WEBHOOK_SECRET:}
+  outbox:
+    poll-delay-ms: ${OUTBOX_POLL_DELAY_MS:5000}
+    batch-size: ${OUTBOX_BATCH_SIZE:50}
+    max-attempts: ${OUTBOX_MAX_ATTEMPTS:8}
 
 logging:
   level:

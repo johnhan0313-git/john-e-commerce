@@ -9,9 +9,9 @@ import java.util.Map;
 public class OrderGroupVO {
     private String orderGroupNo;
     private Integer orderCount;
-    private BigDecimal totalAmount;
-    private BigDecimal discountAmount;
-    private BigDecimal payAmount;
+    private Long totalAmount;
+    private Long discountAmount;
+    private Long payAmount;
     private String groupStatus;
     private List<OrderVO> orders;
 
@@ -23,10 +23,10 @@ public class OrderGroupVO {
         private String skuName;
         private String skuImage;
         private Map<String, String> specValues;
-        private BigDecimal price;
+        private Long price;
         private Integer quantity;
-        private BigDecimal subtotal;
-        private BigDecimal discountAmount;
-        private BigDecimal payAmount;
+        private Long subtotal;
+        private Long discountAmount;
+        private Long payAmount;
     }
 }

@@ -22,10 +22,10 @@ public class Order extends BaseEntity {
     private Integer orderType;
     private Integer status;
     private String splitReason;
-    private BigDecimal totalAmount;
-    private BigDecimal discountAmount;
-    private BigDecimal payAmount;
-    private BigDecimal paidAmount;
+    private Long totalAmount;
+    private Long discountAmount;
+    private Long payAmount;
+    private Long paidAmount;
     private Integer payStatus;
     private Integer payType;
     private Long payTime;

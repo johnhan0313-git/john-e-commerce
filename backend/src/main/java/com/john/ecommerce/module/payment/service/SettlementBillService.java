@@ -5,15 +5,18 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.john.ecommerce.common.exception.BizException;
 import com.john.ecommerce.module.merchant.entity.Shop;
 import com.john.ecommerce.module.merchant.service.ShopService;
+import com.john.ecommerce.module.payment.dto.SettlementBillVO;
+import com.john.ecommerce.module.payment.dto.SettlementOrderVO;
+import com.john.ecommerce.module.payment.dto.SettlementVO;
 import com.john.ecommerce.module.payment.entity.*;
 import com.john.ecommerce.module.payment.enums.SettlementDirection;
 import com.john.ecommerce.module.payment.ledger.entity.LedgerAccount;
 import com.john.ecommerce.module.payment.ledger.enums.AccountType;
 import com.john.ecommerce.module.payment.ledger.service.LedgerService;
 import com.john.ecommerce.module.payment.mapper.*;
-import com.john.ecommerce.module.payment.util.MoneyUtils;
 import com.john.ecommerce.module.trade.entity.Order;
 import com.john.ecommerce.module.trade.entity.Refund;
+import com.john.ecommerce.module.trade.mapper.OrderMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,33 +30,55 @@ import java.util.UUID;
 public class SettlementBillService {
 
     private final SettlementOrderMapper settlementOrderMapper;
+    private final SettlementOrderItemMapper settlementOrderItemMapper;
     private final SettlementBillMapper settlementBillMapper;
     private final SettlementBillRefMapper settlementBillRefMapper;
     private final SettlementMapper settlementMapper;
     private final SettlementRefMapper settlementRefMapper;
     private final ShopService shopService;
     private final LedgerService ledgerService;
+    private final OrderMapper orderMapper;
 
+    /**
+     * Create FORWARD settlement order for a payment item, write SettlementOrderItem,
+     * and auto-post into the open shop bill.
+     */
     @Transactional
-    public void createSettlementOrder(Payment payment, Order order, PaymentItem paymentItem) {
-        if (order.getShopId() == null) {
+    public void createSettlementOrder(Payment payment, PaymentItem item) {
+        Order order = orderMapper.selectById(item.getOrderId());
+        Long merchantId = order != null ? order.getMerchantId() : null;
+        Long shopId = order != null ? order.getShopId() : null;
+        if (shopId == null) {
             throw new BizException("订单缺少店铺，无法结算");
         }
-        long amountCents = MoneyUtils.toCents(paymentItem.getAmount());
+        long amountCents = item.getAmount() != null ? item.getAmount() : 0L;
 
         SettlementOrder so = new SettlementOrder();
         so.setSettlementNo("SO" + UUID.randomUUID().toString().replace("-", "").substring(0, 20));
         so.setDirection(SettlementDirection.FORWARD.getCode());
         so.setBizType("PAYMENT");
         so.setPaymentId(payment.getId());
-        so.setOrderId(order.getId());
-        so.setMerchantId(order.getMerchantId());
-        so.setShopId(order.getShopId());
+        so.setOrderId(item.getOrderId());
+        so.setMerchantId(merchantId);
+        so.setShopId(shopId);
         so.setAmount(amountCents);
         so.setCurrency(payment.getCurrency());
         so.setBillStatus(0);
         so.setStatus(1);
         settlementOrderMapper.insert(so);
+
+        SettlementOrderItem soItem = new SettlementOrderItem();
+        soItem.setSettlementOrderId(so.getId());
+        soItem.setOutAccountType("PLATFORM");
+        soItem.setOutAccountId(0L);
+        soItem.setInAccountType(AccountType.SHOP_BALANCE.getCode());
+        soItem.setInAccountId(shopId);
+        soItem.setAmount(so.getAmount());
+        soItem.setFeeType("GOODS");
+        soItem.setTradeType("PAYMENT");
+        settlementOrderItemMapper.insert(soItem);
+
+        autoPostToBill(so, shopId, merchantId);
     }
 
     @Transactional
@@ -66,6 +91,7 @@ public class SettlementBillService {
                 .last("LIMIT 1"));
         if (existing != null) return existing;
 
+        long amountCents = refund.getAmount() != null ? refund.getAmount() : 0L;
         SettlementOrder reversal = new SettlementOrder();
         reversal.setSettlementNo("SR" + UUID.randomUUID().toString().replace("-", "").substring(0, 20));
         reversal.setDirection(SettlementDirection.REVERSE.getCode());
@@ -74,13 +100,49 @@ public class SettlementBillService {
         reversal.setOrderId(order.getId());
         reversal.setMerchantId(order.getMerchantId());
         reversal.setShopId(order.getShopId());
-        reversal.setAmount(MoneyUtils.toCents(refund.getAmount()));
+        reversal.setAmount(amountCents);
         reversal.setCurrency("CNY");
         reversal.setBillStatus(0);
         reversal.setStatus(1);
         reversal.setIdempotentKey(idempotentKey);
         settlementOrderMapper.insert(reversal);
         return reversal;
+    }
+
+    private void autoPostToBill(SettlementOrder so, Long shopId, Long merchantId) {
+        SettlementBill bill = settlementBillMapper.selectOne(new LambdaQueryWrapper<SettlementBill>()
+                .eq(SettlementBill::getShopId, shopId)
+                .eq(SettlementBill::getSettleStatus, 0)
+                .last("LIMIT 1"));
+
+        if (bill == null) {
+            bill = new SettlementBill();
+            bill.setBillNo(UUID.randomUUID().toString().replace("-", ""));
+            bill.setMerchantId(merchantId);
+            bill.setShopId(shopId);
+            bill.setPayeeType("SHOP");
+            bill.setPayeeId(shopId);
+            bill.setPeriodStart(System.currentTimeMillis());
+            bill.setCurrency(so.getCurrency());
+            bill.setBillAmount(0L);
+            bill.setPreSettleAmount(0L);
+            bill.setStatus("OPEN");
+            bill.setSettleStatus(0);
+            settlementBillMapper.insert(bill);
+        }
+
+        long billAmount = bill.getBillAmount() != null ? bill.getBillAmount() : 0L;
+        long soAmount = so.getAmount() != null ? so.getAmount() : 0L;
+        bill.setBillAmount(billAmount + soAmount);
+        settlementBillMapper.updateById(bill);
+
+        SettlementBillRef ref = new SettlementBillRef();
+        ref.setSettlementBillId(bill.getId());
+        ref.setSettlementOrderId(so.getId());
+        settlementBillRefMapper.insert(ref);
+
+        so.setBillStatus(1);
+        settlementOrderMapper.updateById(so);
     }
 
     @Transactional
@@ -98,7 +160,9 @@ public class SettlementBillService {
         ref.setSettlementOrderId(settlementOrderId);
         settlementBillRefMapper.insert(ref);
 
-        bill.setBillAmount(bill.getBillAmount() + so.getAmount());
+        long billAmount = bill.getBillAmount() != null ? bill.getBillAmount() : 0L;
+        long soAmount = so.getAmount() != null ? so.getAmount() : 0L;
+        bill.setBillAmount(billAmount + soAmount);
         settlementBillMapper.updateById(bill);
 
         so.setBillStatus(1);
@@ -106,7 +170,7 @@ public class SettlementBillService {
     }
 
     @Transactional
-    public Settlement settle(Long billId) {
+    public SettlementVO settle(Long billId) {
         SettlementBill bill = settlementBillMapper.selectById(billId);
         if (bill == null) throw new BizException("结算账单不存在");
         if ("SETTLED".equals(bill.getStatus())) throw new BizException("账单已结算");
@@ -119,7 +183,8 @@ public class SettlementBillService {
         for (SettlementBillRef ref : refs) {
             SettlementOrder so = settlementOrderMapper.selectById(ref.getSettlementOrderId());
             if (so != null) {
-                netAmount += "FORWARD".equals(so.getDirection()) ? so.getAmount() : -so.getAmount();
+                long amt = so.getAmount() != null ? so.getAmount() : 0L;
+                netAmount += "FORWARD".equals(so.getDirection()) ? amt : -amt;
             }
         }
 
@@ -153,45 +218,53 @@ public class SettlementBillService {
         bill.setPreSettleAmount(netAmount);
         settlementBillMapper.updateById(bill);
 
-        return settlement;
+        return toSettlementVO(settlement);
     }
 
-    public Page<SettlementOrder> listOrders(int page, int size, Long shopId, Long merchantId) {
-        return settlementOrderMapper.selectPage(new Page<>(page, size),
+    /** Alias used by {@code SettlementController}. */
+    @Transactional
+    public void settleBill(Long billId) {
+        settle(billId);
+    }
+
+    public Page<SettlementOrderVO> listOrders(int page, int size, Long shopId, Long merchantId) {
+        Page<SettlementOrder> p = settlementOrderMapper.selectPage(new Page<>(page, size),
                 new LambdaQueryWrapper<SettlementOrder>()
                         .eq(shopId != null, SettlementOrder::getShopId, shopId)
                         .eq(merchantId != null, SettlementOrder::getMerchantId, merchantId)
                         .orderByDesc(SettlementOrder::getCreatedAt));
+        return mapOrderPage(p);
     }
 
-    public Page<SettlementOrder> listOrders(int page, int size, Long merchantId) {
+    public Page<SettlementOrderVO> listOrders(int page, int size, Long merchantId) {
         return listOrders(page, size, null, merchantId);
     }
 
-    public Page<SettlementBill> listBills(int page, int size, Long shopId, Long merchantId) {
-        return settlementBillMapper.selectPage(new Page<>(page, size),
+    public Page<SettlementBillVO> listBills(int page, int size, Long shopId, Long merchantId) {
+        Page<SettlementBill> p = settlementBillMapper.selectPage(new Page<>(page, size),
                 new LambdaQueryWrapper<SettlementBill>()
                         .eq(shopId != null, SettlementBill::getShopId, shopId)
                         .eq(merchantId != null, SettlementBill::getMerchantId, merchantId)
                         .orderByDesc(SettlementBill::getCreatedAt));
+        return mapBillPage(p);
     }
 
-    public Page<SettlementBill> listBills(int page, int size, Long merchantId) {
+    public Page<SettlementBillVO> listBills(int page, int size, Long merchantId) {
         return listBills(page, size, null, merchantId);
     }
 
-    public Page<SettlementBill> listBillsForShop(int page, int size, Long shopId) {
+    public Page<SettlementBillVO> listBillsForShop(int page, int size, Long shopId) {
         if (shopId == null) throw new BizException("店铺 ID 不能为空");
         return listBills(page, size, shopId, null);
     }
 
-    public Page<SettlementOrder> listOrdersForShop(int page, int size, Long shopId) {
+    public Page<SettlementOrderVO> listOrdersForShop(int page, int size, Long shopId) {
         if (shopId == null) throw new BizException("店铺 ID 不能为空");
         return listOrders(page, size, shopId, null);
     }
 
     @Transactional
-    public SettlementBill createBill(Long shopId) {
+    public SettlementBillVO createBill(Long shopId) {
         if (shopId == null) throw new BizException("店铺 ID 不能为空");
         Shop shop = shopService.require(shopId);
         SettlementBill bill = new SettlementBill();
@@ -206,6 +279,77 @@ public class SettlementBillService {
         bill.setStatus("OPEN");
         bill.setSettleStatus(0);
         settlementBillMapper.insert(bill);
-        return bill;
+        return toBillVO(bill);
+    }
+
+    private Page<SettlementBillVO> mapBillPage(Page<SettlementBill> p) {
+        Page<SettlementBillVO> result = new Page<>();
+        result.setTotal(p.getTotal());
+        result.setCurrent(p.getCurrent());
+        result.setSize(p.getSize());
+        result.setRecords(p.getRecords().stream().map(this::toBillVO).toList());
+        return result;
+    }
+
+    private Page<SettlementOrderVO> mapOrderPage(Page<SettlementOrder> p) {
+        Page<SettlementOrderVO> result = new Page<>();
+        result.setTotal(p.getTotal());
+        result.setCurrent(p.getCurrent());
+        result.setSize(p.getSize());
+        result.setRecords(p.getRecords().stream().map(this::toOrderVO).toList());
+        return result;
+    }
+
+    private SettlementBillVO toBillVO(SettlementBill b) {
+        SettlementBillVO vo = new SettlementBillVO();
+        vo.setId(b.getId());
+        vo.setBillNo(b.getBillNo());
+        vo.setMerchantId(b.getMerchantId());
+        vo.setShopId(b.getShopId());
+        vo.setPayeeType(b.getPayeeType());
+        vo.setPayeeId(b.getPayeeId());
+        vo.setPeriodStart(b.getPeriodStart());
+        vo.setPeriodEnd(b.getPeriodEnd());
+        vo.setCurrency(b.getCurrency());
+        vo.setBillAmount(b.getBillAmount());
+        vo.setPreSettleAmount(b.getPreSettleAmount());
+        vo.setStatus(b.getStatus());
+        vo.setSettleStatus(b.getSettleStatus());
+        vo.setCreatedAt(b.getCreatedAt());
+        return vo;
+    }
+
+    private SettlementOrderVO toOrderVO(SettlementOrder o) {
+        SettlementOrderVO vo = new SettlementOrderVO();
+        vo.setId(o.getId());
+        vo.setSettlementNo(o.getSettlementNo());
+        vo.setDirection(o.getDirection());
+        vo.setBizType(o.getBizType());
+        vo.setPaymentId(o.getPaymentId());
+        vo.setOrderId(o.getOrderId());
+        vo.setMerchantId(o.getMerchantId());
+        vo.setShopId(o.getShopId());
+        vo.setAmount(o.getAmount());
+        vo.setCurrency(o.getCurrency());
+        vo.setBillStatus(o.getBillStatus());
+        vo.setStatus(o.getStatus());
+        vo.setExtra(o.getExtra());
+        vo.setCreatedAt(o.getCreatedAt());
+        return vo;
+    }
+
+    private SettlementVO toSettlementVO(Settlement s) {
+        SettlementVO vo = new SettlementVO();
+        vo.setId(s.getId());
+        vo.setSettleNo(s.getSettleNo());
+        vo.setSettlementBillId(s.getSettlementBillId());
+        vo.setMerchantId(s.getMerchantId());
+        vo.setShopId(s.getShopId());
+        vo.setNetAmount(s.getNetAmount());
+        vo.setCurrency(s.getCurrency());
+        vo.setStatus(s.getStatus());
+        vo.setSettledAt(s.getSettledAt());
+        vo.setCreatedAt(s.getCreatedAt());
+        return vo;
     }
 }

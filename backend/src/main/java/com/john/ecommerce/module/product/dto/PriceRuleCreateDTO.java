@@ -13,7 +13,7 @@ public class PriceRuleCreateDTO {
     private String ruleType;
     private Integer minQty;
     @NotNull(message = "价格不能为空")
-    private BigDecimal price;
+    private Long price;
     private Long startTime;
     private Long endTime;
     private Integer status;

@@ -18,8 +18,8 @@ public class Sku extends BaseEntity {
     private String skuName;
     @TableField(typeHandler = JacksonTypeHandler.class)
     private Map<String, String> specValues;
-    private BigDecimal price;
-    private BigDecimal costPrice;
+    private Long price;
+    private Long costPrice;
     /** DB: SMALLINT 0/1（勿用 Boolean，PG 无法绑定 boolean → smallint） */
     private Integer lotEnabled;
     private BigDecimal weight;

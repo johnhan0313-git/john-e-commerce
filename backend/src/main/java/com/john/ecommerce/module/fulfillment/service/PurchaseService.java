@@ -12,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,9 +35,10 @@ public class PurchaseService {
         po.setRefActivityId(dto.getRefActivityId());
         po.setStatus("DRAFT");
         po.setRemark(dto.getRemark());
-        BigDecimal total = BigDecimal.ZERO;
+        long total = 0L;
         for (PurchaseOrderCreateDTO.Item item : dto.getItems()) {
-            total = total.add(item.getPrice().multiply(BigDecimal.valueOf(item.getQty())));
+            long price = item.getPrice() != null ? item.getPrice() : 0L;
+            total += price * item.getQty();
         }
         po.setTotalAmount(total);
         purchaseOrderMapper.insert(po);

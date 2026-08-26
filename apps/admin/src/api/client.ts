@@ -18,7 +18,15 @@ client.interceptors.request.use((config) => {
 })
 
 client.interceptors.response.use(
-  (res) => res.data,
+  (res) => {
+    const body = res.data
+    if (body && typeof body.code === 'number' && body.code !== 200) {
+      const message = body.message || '请求失败'
+      ElMessage.error(message)
+      return Promise.reject(Object.assign(new Error(message), { response: res, businessCode: body.code }))
+    }
+    return body
+  },
   (err) => {
     const status = err.response?.status
     const message = err.response?.data?.message || err.message || '请求失败'
@@ -27,10 +35,12 @@ client.interceptors.response.use(
       if (!location.pathname.startsWith('/login')) {
         window.location.href = '/login'
       }
-    } else if (status !== 403) {
-      ElMessage.error(message)
-    } else {
-      ElMessage.warning(message || '模块未开通或无权限')
+    } else if (!err.businessCode) {
+      if (status !== 403) {
+        ElMessage.error(message)
+      } else {
+        ElMessage.warning(message || '模块未开通或无权限')
+      }
     }
     return Promise.reject(err)
   }

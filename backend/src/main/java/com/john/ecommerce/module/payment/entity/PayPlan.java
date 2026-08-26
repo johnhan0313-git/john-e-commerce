@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 public class PayPlan extends BaseEntity {
     private Long orderId;
     private String planNo;
-    private BigDecimal amount;
+    private Long amount;
     private Long dueAt;
     private Integer status;
     private Long paidPaymentId;

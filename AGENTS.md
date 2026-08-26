@@ -50,10 +50,12 @@
 - 商品模型以 SPU/SKU 为核心；SPU 可归属 merchant/shop。商家端通过当前店铺上下文管理商品和订单。
 - 下单时 `OrderSplitter` 先按 shop、再按 warehouse 拆单；warehouse 当前固定为 `0`，因此实质按店铺拆单，并形成 order group。
 - 订单状态码：0 待支付、1 已支付、2 已发货、3 已送达、4 已完成、5 已取消、6 退款中、7 已退款、8 部分发货。
-- 合法状态迁移集中在 `trade/service/statemachine/OrderStateMachine.java`，修改订单流程时必须同步状态机和测试，不能在 controller/service 任意写状态。
+- 合法状态迁移集中在 `trade/service/statemachine/OrderStateMachine.java`，并由 `OrderLifecyclePort` / `OrderLifecycleApplication` 独占写 `t_order.status`；payment/fulfillment 禁止直接改订单状态，须经 Port。修改订单流程时必须同步状态机、Port 与 ArchUnit 测试。
 - 待支付订单有 `payDeadline`；后台任务按配置自动取消超时单。支付超时默认 30 分钟，扫描/延迟默认 60 秒。
-- 支付层有渠道路由、mock/balance 渠道、账本、分账、结算和跨境骨架；金额语义不统一：订单金额多为 `DECIMAL(12,2)`，账本/结算多为 `BIGINT` 分，跨层传递必须显式换算。
+- 业务金额统一为 **分（BIGINT / Long）**；`Money` VO 在 `common/money`。API 与实体均为分；前端用 `@john/fe-shared` 的 `formatCents` / `yuanToCents` 展示与录入。
 - 创建支付单时后端会校验订单属于当前用户、订单可支付、未超期，并要求客户端金额与订单剩余应付完全一致；重复订单支付项会被拒绝。mock 回调仅允许 MOCK 渠道和支付单所属买家调用，并通过条件更新保证重复/并发回调只执行一次下游副作用。
+- 支付完成经 `CompletePaymentApplication`：支付单条件更新 → `OrderLifecyclePort.markPaid` → 同步写结算单；库存扣减经 outbox 事件 `OrderPaid` 异步消费（幂等）。
+- 退款申请会将订单置为 `REFUNDING`；全额成功 → `REFUNDED`，部分成功/拒绝 → 恢复退款前快照状态。未发货退款的库存回补经 outbox `RefundCompleted`。
 - 真实支付回调入口为 `POST /api/payment/callback?payNo=...`，匿名可调用但必须带 `X-Payment-Timestamp` 和 `X-Payment-Signature`；签名为 `HMAC-SHA256(payNo + "." + timestamp, PAYMENT_WEBHOOK_SECRET)` 的小写 hex，时间窗为 5 分钟。未配置 `PAYMENT_WEBHOOK_SECRET` 时回调拒绝。回调与 mock 共用幂等完成逻辑。
 - 物流回调入口 `POST /api/logistics/webhook/{trackingNo}` 同样匿名但必须带 `X-Logistics-Timestamp` 和 `X-Logistics-Signature`；签名 payload 为 `trackingNo.status.eventTime.timestamp`，密钥来自 `LOGISTICS_WEBHOOK_SECRET`，时间窗 5 分钟。未配置密钥时拒绝。
 - 商家结算只读接口为 `/shop/settlements/bills` 和 `/shop/settlements/orders`，通过当前 `X-Shop-Id` 和已认证 seller 强制限定店铺范围；平台结算接口仍仅限 ops。
@@ -66,7 +68,7 @@
 
 ## 数据库约定
 
-- SQL 当前从 `V001` 延伸到 `V021`；以目录实际文件为准，按数字顺序全量执行。
+- SQL 当前从 `V001` 延伸到 `V023`；以目录实际文件为准，按数字顺序全量执行。`V022` 将业务金额列统一为 BIGINT 分；`V023` 引入无 MQ 的事务性 outbox（`t_event_outbox` / `t_event_inbox`）：支付成功库存扣减与退款库存回补经 outbox 异步处理，结算仍同步。
 - 后端不会自动迁移。改表时新增后续版本脚本，并考虑已部署数据库需要的增量执行方式；不要只改旧初始化脚本。
 - 已预留 `SPRING_FLYWAY_ENABLED` 和 `spring.flyway.locations=classpath:db/migration` 配置，但当前未引入 Flyway 依赖，默认关闭；现有 `scripts/sql` 仍是唯一实际迁移来源。引入前需准备可用 Maven 仓库，并处理现有环境基线，不能直接打开开关。
 - 主键为应用生成的 BIGINT（MyBatis-Plus `assign_id`），不是自增列。
@@ -77,10 +79,10 @@
 ## API 与前端约定
 
 - 普通后端响应使用 `R<T>`：`{ code, message, data }`，成功业务码为 `200`；分页通常使用 MyBatis-Plus `Page` 或项目 `PageResult`。
-- mall 客户端会检查 HTTP 200 内的业务码；admin/merchant 当前主要直接返回响应体。改统一错误处理时需同时检查三个 client。
+- mall / admin / merchant 客户端均校验 HTTP 200 内业务码 `code === 200`。
 - token key 分别是 `admin_token`、`token`（mall）、`merchant_token`；商家当前店铺 key 为 `merchant_active_shop_id`。
-- 三个前端是独立工程，各自有 `package-lock.json`，没有根级 npm workspace。依赖和命令需在对应 `apps/*` 目录运行。
-- admin/merchant 共享许多交互模式但没有共享组件包；修复一端的上传、富文本、鉴权或品牌样式问题时，检查另一端是否也需一致修复。
+- 三个前端是独立工程，各自有 `package-lock.json`；共享纯逻辑在 `packages/fe-shared`（金额、SKU cartesian），经 Vite alias `@john/fe-shared` 引用。上传/富文本组件仍在各端本地副本。
+- mall 结算/支付能力在 `apps/mall/src/features/{checkout,pay}`；页面只做组合。
 
 ## 开发与验证
 
@@ -91,7 +93,8 @@
 - 前端构建：分别在三个 app 目录运行 `npm run build`。merchant 另有 `npm test`；admin 和 mall 当前没有测试脚本。
 - 后端重要测试覆盖邮箱登录/身份、订单状态机与拆单、营销叠加、FEFO、支付路由，以及登录、金钱链路、履约/模块门控、商户门户集成路径。
 - 验证应按改动范围最小化执行；涉及 DTO/API 契约时至少构建受影响前端和后端，涉及 SQL/租户/交易/支付时优先跑相关集成测试。
-- 当前仍未完成：Flyway 迁移、统一分为金额、真实支付渠道签名 webhook/主动查单、完整权限矩阵（内容/商品运营/跨境等域）、商家只读结算视图和售后闭环；不要把当前权限收口误认为全量安全审计已结束。
+- 当前仍未完成：Flyway 迁移、真实支付渠道主动查单、完整权限矩阵（内容/商品运营/跨境等域）、完整售后收货闭环；不要把当前权限收口误认为全量安全审计已结束。
+- 架构门禁：`ArchitectureTest`（ArchUnit）约束仅 trade 可 `Order.setStatus`、Controller 不依赖 Mapper、payment 不经 OrderMapper 写订单。
 
 ## 部署与配置
 

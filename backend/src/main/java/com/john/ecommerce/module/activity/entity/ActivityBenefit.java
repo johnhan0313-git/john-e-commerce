@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.john.ecommerce.common.base.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import java.math.BigDecimal;
 import java.util.Map;
 
 @Data
@@ -15,7 +14,7 @@ import java.util.Map;
 public class ActivityBenefit extends BaseEntity {
     private Long activityId;
     private String benefitType;
-    private BigDecimal benefitValue;
+    private Long benefitValue;
     @TableField(typeHandler = JacksonTypeHandler.class)
     private Map<String, Object> config;
     private Integer status;

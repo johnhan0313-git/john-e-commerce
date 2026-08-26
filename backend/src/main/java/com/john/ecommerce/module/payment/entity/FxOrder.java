@@ -19,8 +19,8 @@ public class FxOrder extends BaseEntity {
     private Long orderId;
     private String sellCurrency;
     private String buyCurrency;
-    private BigDecimal sellAmount;
-    private BigDecimal buyAmount;
+    private Long sellAmount;
+    private Long buyAmount;
     private BigDecimal exchangeRate;
     private Integer status;
     private String channelRefNo;

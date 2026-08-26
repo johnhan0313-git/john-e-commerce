@@ -28,7 +28,7 @@
           </template>
         </el-table-column>
         <el-table-column label="应付" width="120">
-          <template #default="{ row }">¥{{ row.payAmount }}</template>
+          <template #default="{ row }">¥{{ formatCents(row.payAmount) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
@@ -54,7 +54,7 @@
           <el-descriptions-item label="订单号">{{ detail.orderNo }}</el-descriptions-item>
           <el-descriptions-item label="状态">{{ detail.statusLabel || detail.status }}</el-descriptions-item>
           <el-descriptions-item label="支付">{{ detail.payStatusLabel || detail.payStatus }}</el-descriptions-item>
-          <el-descriptions-item label="应付">¥{{ detail.payAmount }}</el-descriptions-item>
+          <el-descriptions-item label="应付">¥{{ formatCents(detail.payAmount) }}</el-descriptions-item>
         </el-descriptions>
 
         <h4 class="drawer-h">明细</h4>
@@ -83,6 +83,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import client from '@/api/client'
+import { formatCents } from '@john/fe-shared/money'
 import type { Order, PageResult, R } from '@/types'
 
 const list = ref<Order[]>([])

@@ -69,6 +69,7 @@
 import { computed, onMounted, ref } from 'vue'
 import client from '@/api/client'
 import type { R, StatsOverview } from '@/types'
+import { formatCents } from '@john/fe-shared/money'
 
 const ORDER_STATUS_LABEL: Record<string, string> = {
   '0': '待支付',
@@ -104,8 +105,7 @@ function barWidth(count: number | string) {
 }
 
 function formatMoney(v: unknown) {
-  const n = Number(v || 0)
-  return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return formatCents(v as number)
 }
 
 onMounted(async () => {

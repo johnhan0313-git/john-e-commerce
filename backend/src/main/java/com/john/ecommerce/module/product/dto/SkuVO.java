@@ -11,8 +11,8 @@ public class SkuVO {
     private String skuCode;
     private String skuName;
     private Map<String, String> specValues;
-    private BigDecimal price;
-    private BigDecimal costPrice;
+    private Long price;
+    private Long costPrice;
     private Boolean lotEnabled;
     private BigDecimal weight;
     private String barcode;

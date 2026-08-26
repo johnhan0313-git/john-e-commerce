@@ -4,7 +4,6 @@ import com.john.ecommerce.module.product.entity.Sku;
 import com.john.ecommerce.module.product.entity.Spu;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,15 +50,15 @@ class OrderSplitterTest {
         Sku sku = new Sku();
         sku.setId(skuId);
         sku.setSpuId(spu.getId());
-        sku.setPrice(BigDecimal.TEN);
+        sku.setPrice(1000L);
 
         OrderSplitBucket.SplitLine line = new OrderSplitBucket.SplitLine();
         line.setSpu(spu);
         line.setSku(sku);
         line.setQuantity(1);
-        line.setUnitPrice(BigDecimal.TEN);
-        line.setDiscountAmount(BigDecimal.ZERO);
-        line.setPayAmount(BigDecimal.TEN);
+        line.setUnitPrice(1000L);
+        line.setDiscountAmount(0L);
+        line.setPayAmount(1000L);
         return line;
     }
 }

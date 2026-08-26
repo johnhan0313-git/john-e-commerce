@@ -7,8 +7,6 @@ import com.john.ecommerce.module.activity.service.handler.ActivityTypeHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -44,12 +42,13 @@ public class DefaultPromoEngine implements PromoEngine {
         }
 
         List<PromoCandidate> applied = stackingPolicy.select(candidates);
-        BigDecimal orderDiscount = applied.stream()
+        long orderDiscount = applied.stream()
                 .map(PromoCandidate::getDiscountAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(d -> d != null ? d : 0L)
+                .reduce(0L, Long::sum);
 
         PromoOrderResult result = new PromoOrderResult();
-        BigDecimal total = BigDecimal.ZERO;
+        long total = 0L;
         for (PromoContext.PromoLine line : context.getLines()) {
             PromoOrderResult.PromoLineResult lr = new PromoOrderResult.PromoLineResult();
             lr.setSkuId(line.getSkuId());
@@ -57,32 +56,32 @@ public class DefaultPromoEngine implements PromoEngine {
             lr.setQuantity(line.getQuantity());
             lr.setUnitPrice(line.getUnitPrice());
             lr.setLineTotal(line.getLineTotal());
-            lr.setDiscountAmount(BigDecimal.ZERO);
+            lr.setDiscountAmount(0L);
             lr.setPayAmount(line.getLineTotal());
             result.getLines().add(lr);
-            total = total.add(line.getLineTotal());
+            total += line.getLineTotal() != null ? line.getLineTotal() : 0L;
         }
 
-        if (total.compareTo(BigDecimal.ZERO) > 0 && orderDiscount.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal remaining = orderDiscount;
+        if (total > 0 && orderDiscount > 0) {
+            long remaining = orderDiscount;
             for (int i = 0; i < result.getLines().size(); i++) {
                 PromoOrderResult.PromoLineResult lr = result.getLines().get(i);
-                BigDecimal share;
+                long lineTotal = lr.getLineTotal() != null ? lr.getLineTotal() : 0L;
+                long share;
                 if (i == result.getLines().size() - 1) {
                     share = remaining;
                 } else {
-                    share = orderDiscount.multiply(lr.getLineTotal())
-                            .divide(total, 2, RoundingMode.HALF_UP);
-                    remaining = remaining.subtract(share);
+                    share = orderDiscount * lineTotal / total;
+                    remaining -= share;
                 }
                 lr.setDiscountAmount(share);
-                lr.setPayAmount(lr.getLineTotal().subtract(share));
+                lr.setPayAmount(lineTotal - share);
             }
         }
 
         result.setTotalAmount(total);
         result.setDiscountAmount(orderDiscount);
-        result.setPayAmount(total.subtract(orderDiscount));
+        result.setPayAmount(total - orderDiscount);
         result.setApplied(applied);
         return result;
     }

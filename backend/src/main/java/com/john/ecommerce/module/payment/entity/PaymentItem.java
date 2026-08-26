@@ -13,5 +13,5 @@ import java.math.BigDecimal;
 public class PaymentItem extends BaseEntity {
     private Long paymentId;
     private Long orderId;
-    private BigDecimal amount;
+    private Long amount;
 }

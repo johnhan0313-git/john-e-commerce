@@ -4,7 +4,6 @@ import com.john.ecommerce.module.product.entity.Sku;
 import com.john.ecommerce.module.product.entity.Spu;
 import lombok.Data;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,9 +20,9 @@ public class OrderSplitBucket {
         private Sku sku;
         private Spu spu;
         private int quantity;
-        private BigDecimal unitPrice;
-        private BigDecimal discountAmount;
-        private BigDecimal payAmount;
+        private Long unitPrice;
+        private Long discountAmount;
+        private Long payAmount;
         private Long activityId;
     }
 }

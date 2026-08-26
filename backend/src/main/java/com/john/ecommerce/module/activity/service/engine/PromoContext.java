@@ -1,7 +1,6 @@
 package com.john.ecommerce.module.activity.service.engine;
 
 import lombok.Data;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +17,7 @@ public class PromoContext {
         private Long categoryId;
         private Long merchantId;
         private int quantity;
-        private BigDecimal unitPrice;
-        private BigDecimal lineTotal;
+        private Long unitPrice;
+        private Long lineTotal;
     }
 }

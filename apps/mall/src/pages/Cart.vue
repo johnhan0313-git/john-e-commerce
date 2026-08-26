@@ -21,7 +21,7 @@
         <div class="meta">
           <strong>{{ item.spuName || item.skuName }}</strong>
           <p class="muted">{{ item.skuName }}</p>
-          <p class="price">¥{{ item.price ?? '—' }}</p>
+          <p class="price">¥{{ item.price != null ? formatCents(item.price) : '—' }}</p>
         </div>
         <div class="ops">
           <input
@@ -50,6 +50,7 @@
 import { computed, onMounted, ref } from 'vue'
 import client from '@/api/client'
 import { toast } from '@/utils/toast'
+import { formatCents } from '@john/fe-shared/money'
 import type { CartItem, R, Sku } from '@/types'
 
 const items = ref<CartItem[]>([])
@@ -58,14 +59,12 @@ const loading = ref(true)
 const selectedItems = computed(() => items.value.filter((i) => i.selected === 1))
 const selectedCount = computed(() => selectedItems.value.reduce((s, i) => s + i.quantity, 0))
 const selectedTotal = computed(() =>
-  selectedItems.value
-    .reduce((s, i) => s + (Number(i.price) || 0) * i.quantity, 0)
-    .toFixed(2)
+  formatCents(selectedItems.value.reduce((s, i) => s + (Number(i.price) || 0) * i.quantity, 0))
 )
 
 async function enrichPrices(list: CartItem[]) {
-  const uniqueSkuIds = [...new Set(list.map((i) => i.skuId))]
-  const priceMap = new Map<number, number>()
+  const uniqueSkuIds = [...new Set(list.map((i) => String(i.skuId)))]
+  const priceMap = new Map<string, number>()
   await Promise.all(
     uniqueSkuIds.map(async (skuId) => {
       try {
@@ -76,7 +75,7 @@ async function enrichPrices(list: CartItem[]) {
       }
     })
   )
-  return list.map((i) => ({ ...i, price: priceMap.get(i.skuId) }))
+  return list.map((i) => ({ ...i, price: priceMap.get(String(i.skuId)) }))
 }
 
 async function load() {
@@ -101,7 +100,7 @@ async function onQty(item: CartItem, value: string) {
   item.quantity = quantity
 }
 
-async function remove(id: number) {
+async function remove(id: number | string) {
   await client.delete(`/cart/${id}`)
   items.value = items.value.filter((i) => i.id !== id)
   toast('已删除', 'success')

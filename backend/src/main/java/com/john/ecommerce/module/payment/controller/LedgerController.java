@@ -6,8 +6,8 @@ import com.john.ecommerce.common.module.ModuleCodes;
 import com.john.ecommerce.common.module.RequiresModule;
 import com.john.ecommerce.common.result.R;
 import com.john.ecommerce.module.payment.dto.LedgerAccountVO;
+import com.john.ecommerce.module.payment.dto.LedgerFlowVO;
 import com.john.ecommerce.module.payment.ledger.entity.LedgerAccount;
-import com.john.ecommerce.module.payment.ledger.entity.LedgerFlow;
 import com.john.ecommerce.module.payment.ledger.service.LedgerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,7 +25,7 @@ public class LedgerController {
     public R<LedgerAccountVO> myAccount(@RequestParam(defaultValue = "USER_BALANCE") String accountType) {
         Long userId = UserContext.getCurrentUserId();
         LedgerAccount account = ledgerService.openAccount("USER", userId, accountType, "CNY");
-        return R.ok(toVO(account));
+        return R.ok(ledgerService.toAccountVO(account));
     }
 
     @PostMapping("/recharge")
@@ -38,26 +38,11 @@ public class LedgerController {
     }
 
     @GetMapping("/my-flow")
-    public R<Page<LedgerFlow>> myFlows(@RequestParam(defaultValue = "USER_BALANCE") String accountType,
-                                       @RequestParam(defaultValue = "1") int page,
-                                       @RequestParam(defaultValue = "20") int size) {
+    public R<Page<LedgerFlowVO>> myFlows(@RequestParam(defaultValue = "USER_BALANCE") String accountType,
+                                         @RequestParam(defaultValue = "1") int page,
+                                         @RequestParam(defaultValue = "20") int size) {
         Long userId = UserContext.getCurrentUserId();
         LedgerAccount account = ledgerService.openAccount("USER", userId, accountType, "CNY");
-        return R.ok(ledgerService.listFlows(page, size, account.getId()));
-    }
-
-    private LedgerAccountVO toVO(LedgerAccount a) {
-        LedgerAccountVO vo = new LedgerAccountVO();
-        vo.setId(a.getId());
-        vo.setOwnerType(a.getOwnerType());
-        vo.setOwnerId(a.getOwnerId());
-        vo.setAccountType(a.getAccountType());
-        vo.setCurrency(a.getCurrency());
-        vo.setBalance(a.getBalance());
-        vo.setFrozen(a.getFrozen());
-        vo.setAvailable(a.getAvailable());
-        vo.setStatus(a.getStatus());
-        vo.setCreatedAt(a.getCreatedAt());
-        return vo;
+        return R.ok(ledgerService.listFlowVOs(page, size, account.getId()));
     }
 }

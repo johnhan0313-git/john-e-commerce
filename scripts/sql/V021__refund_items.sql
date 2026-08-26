@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS t_refund_item (
     order_item_id       BIGINT NOT NULL,
     sku_id              BIGINT NOT NULL,
     quantity            INT NOT NULL,
-    amount              DECIMAL(12,2) NOT NULL,
+    amount              BIGINT NOT NULL,
     stock_restored      SMALLINT NOT NULL DEFAULT 0,
     delete_flag         SMALLINT NOT NULL DEFAULT 0,
     created_at          BIGINT NOT NULL,

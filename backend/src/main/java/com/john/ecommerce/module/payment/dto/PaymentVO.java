@@ -12,7 +12,7 @@ public class PaymentVO {
     private String methodCode;
     private String channelType;
     private String currency;
-    private BigDecimal amount;
+    private Long amount;
     private Integer status;
     private String channelTradeNo;
     private Long paidAt;
@@ -24,6 +24,6 @@ public class PaymentVO {
     public static class PaymentItemVO {
         private Long id;
         private Long orderId;
-        private BigDecimal amount;
+        private Long amount;
     }
 }

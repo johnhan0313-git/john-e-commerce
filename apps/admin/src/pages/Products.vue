@@ -193,14 +193,12 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import client from '@/api/client'
+import { centsToYuan, yuanToCents } from '@john/fe-shared/money'
+import { attrsFromSkuSpecs, buildSkuName, regenerateSkuDrafts } from '@john/fe-shared/productSku'
+import type { SalesAttr as SharedSalesAttr } from '@john/fe-shared/productSku'
 import ImageUpload from '@/components/ImageUpload.vue'
 import RichTextEditor from '@/components/RichTextEditor.vue'
 import type { Category, PageResult, R, SalesAttr as SalesAttrType, Sku, Spu } from '@/types'
-
-interface SalesAttr {
-  name: string
-  values: string[]
-}
 
 interface SkuDraft {
   id?: number | string
@@ -229,7 +227,7 @@ const form = reactive({
   imageUrl: '',
   detail: '',
   categoryId: null as number | string | null,
-  salesAttrs: [] as SalesAttr[],
+  salesAttrs: [] as SharedSalesAttr[],
   skus: [] as SkuDraft[],
 })
 const batchPrice = ref(99)
@@ -247,54 +245,16 @@ function onFilterChange() {
   load()
 }
 
-function cartesian(attrs: SalesAttr[]): Record<string, string>[] {
-  const valid = attrs
-    .map((a) => ({
-      name: a.name.trim(),
-      values: a.values.map((v) => String(v).trim()).filter(Boolean),
-    }))
-    .filter((a) => a.name && a.values.length)
-  if (!valid.length) return [{}]
-  return valid.reduce<Record<string, string>[]>((acc, attr) => {
-    const next: Record<string, string>[] = []
-    for (const row of acc) {
-      for (const v of attr.values) {
-        next.push({ ...row, [attr.name]: v })
-      }
-    }
-    return next
-  }, [{}])
-}
-
-function specKey(spec: Record<string, string>) {
-  return Object.keys(spec)
-    .sort()
-    .map((k) => `${k}=${spec[k]}`)
-    .join('|')
-}
-
-function buildSkuName(productName: string, spec: Record<string, string>) {
-  const parts = Object.values(spec).filter(Boolean)
-  if (!parts.length) return productName || '默认规格'
-  return `${productName || '商品'}-${parts.join('-')}`
-}
-
 function regenSkus() {
-  const combos = cartesian(form.salesAttrs)
-  const prev = new Map(form.skus.map((s) => [specKey(s.specValues), s]))
-  const productName = form.name.trim()
-  form.skus = combos.map((spec) => {
-    const old = prev.get(specKey(spec))
-    return {
-      id: old?.id,
-      skuName: old?.skuName || buildSkuName(productName, spec),
-      skuCode: old?.skuCode || '',
-      price: old?.price ?? batchPrice.value ?? 99,
-      initStock: old?.initStock ?? batchStock.value ?? 0,
-      specValues: { ...spec },
-    }
+  form.skus = regenerateSkuDrafts({
+    salesAttrs: form.salesAttrs,
+    previous: form.skus,
+    productName: form.name.trim(),
+    defaultPrice: batchPrice.value ?? 99,
+    defaultStock: batchStock.value ?? 0,
   })
 }
+
 
 function addAttr() {
   form.salesAttrs.push({ name: '', values: [] })
@@ -317,22 +277,6 @@ function applyBatchStock() {
   form.skus.forEach((s) => {
     s.initStock = batchStock.value
   })
-}
-
-function attrsFromSkus(skus: Sku[]): SalesAttr[] {
-  const map = new Map<string, Set<string>>()
-  for (const s of skus) {
-    const spec = s.specValues || {}
-    for (const [k, v] of Object.entries(spec)) {
-      if (!k || !v) continue
-      if (!map.has(k)) map.set(k, new Set())
-      map.get(k)!.add(String(v))
-    }
-  }
-  return [...map.entries()].map(([name, values]) => ({
-    name,
-    values: [...values],
-  }))
 }
 
 async function load() {
@@ -361,7 +305,7 @@ function resetForm() {
     imageUrl: '',
     detail: '',
     categoryId: null,
-    salesAttrs: [{ name: '颜色', values: [] }] as SalesAttr[],
+    salesAttrs: [{ name: '颜色', values: [] }] as SharedSalesAttr[],
     skus: [] as SkuDraft[],
   })
   batchPrice.value = 99
@@ -389,13 +333,13 @@ async function openEdit(row: Spu) {
     const spu = detail.data || row
     const skuRes = (await client.get('/sku', { params: { spuId: row.id } })) as R<Sku[]>
     const skuList = skuRes.data || []
-    const salesAttrs: SalesAttr[] =
+    const salesAttrs: SharedSalesAttr[] =
       (spu.salesAttrs as SalesAttrType[] | undefined)?.length
         ? spu.salesAttrs!.map((a) => ({
             name: a.name,
             values: [...(a.values || [])],
           }))
-        : attrsFromSkus(skuList)
+        : attrsFromSkuSpecs(skuList)
     Object.assign(form, {
       id: spu.id,
       name: spu.name || '',
@@ -408,7 +352,7 @@ async function openEdit(row: Spu) {
         id: s.id,
         skuName: s.skuName || '',
         skuCode: s.skuCode || '',
-        price: Number(s.price) || 0,
+        price: centsToYuan(Number(s.price) || 0),
         initStock: s.available ?? 0,
         specValues: { ...(s.specValues || {}) },
       })),
@@ -438,7 +382,7 @@ function buildPayload() {
       id: s.id || undefined,
       skuName: s.skuName.trim() || buildSkuName(form.name.trim(), s.specValues),
       skuCode: s.skuCode || undefined,
-      price: s.price,
+      price: yuanToCents(s.price),
       initStock: s.initStock ?? 0,
       status: 1,
       specValues: Object.keys(s.specValues).length ? s.specValues : undefined,

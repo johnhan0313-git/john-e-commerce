@@ -38,7 +38,7 @@ alwaysApply: true
 - API 返回 `R<T>`；业务失败抛 `BizException`；校验文案可中文
 - 租户：JWT → `TenantContext` / `UserContext` → MP `TenantLineInnerInterceptor`；勿手写跨租户查业务表
 - 模块开关：`@RequiresModule(ModuleCodes.*)` + `FeatureGateInterceptor` + `TenantModuleService`（`@Primary` 实现 `TenantModuleChecker`）
-- 跨模块经 Facade（如 `InventoryFacade`、`PromoEngine`、`PayChannel`/`SplitChannel` SPI），避免环依赖
+- 跨模块经 Facade/Port（如 `InventoryPort`、`PromoEngine`、`PayChannel`/`SplitChannel` SPI）与 `common.outbox` 事务性 outbox，避免环依赖
 - 多业态差异优先 JSONB（`extra` / `rule_config` / `business_types`），少加列
 - 新表：按序追加 `scripts/sql/V0xx__….sql`，保持租户+审计+delete_flag 一致
 - 优先填空模块骨架，不另起顶层包；不主动写 README

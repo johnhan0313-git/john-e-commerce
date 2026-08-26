@@ -19,8 +19,8 @@ import com.john.ecommerce.module.product.dto.SkuVO;
 import com.john.ecommerce.module.product.dto.SpuCreateDTO;
 import com.john.ecommerce.module.product.dto.SpuVO;
 import com.john.ecommerce.module.trade.dto.OrderVO;
-import com.john.ecommerce.module.payment.entity.SettlementBill;
-import com.john.ecommerce.module.payment.entity.SettlementOrder;
+import com.john.ecommerce.module.payment.dto.SettlementBillVO;
+import com.john.ecommerce.module.payment.dto.SettlementOrderVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -154,14 +154,14 @@ public class ShopController {
 
     @GetMapping("/settlements/bills")
     @PreAuthorize("hasRole('SELLER')")
-    public R<Page<SettlementBill>> settlementBills(@RequestParam(defaultValue = "1") int page,
+    public R<Page<SettlementBillVO>> settlementBills(@RequestParam(defaultValue = "1") int page,
                                                     @RequestParam(defaultValue = "20") int size) {
         return R.ok(shopPortalService.listSettlementBills(page, size));
     }
 
     @GetMapping("/settlements/orders")
     @PreAuthorize("hasRole('SELLER')")
-    public R<Page<SettlementOrder>> settlementOrders(@RequestParam(defaultValue = "1") int page,
+    public R<Page<SettlementOrderVO>> settlementOrders(@RequestParam(defaultValue = "1") int page,
                                                       @RequestParam(defaultValue = "20") int size) {
         return R.ok(shopPortalService.listSettlementOrders(page, size));
     }

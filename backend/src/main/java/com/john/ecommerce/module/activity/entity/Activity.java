@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.john.ecommerce.common.base.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import java.math.BigDecimal;
 import java.util.Map;
 
 @Data
@@ -27,8 +26,8 @@ public class Activity extends BaseEntity {
     private String promoStage;
     @TableField(typeHandler = JacksonTypeHandler.class)
     private Map<String, Object> ruleConfig;
-    private BigDecimal budget;
-    private BigDecimal usedBudget;
+    private Long budget;
+    private Long usedBudget;
     private Integer totalQuota;
     private Integer usedQuota;
 }

@@ -2,7 +2,6 @@ package com.john.ecommerce.module.fulfillment.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.john.ecommerce.common.context.TenantContext;
-import com.john.ecommerce.common.enums.OrderStatus;
 import com.john.ecommerce.common.exception.BizException;
 import com.john.ecommerce.module.fulfillment.dto.LogisticsCreateDTO;
 import com.john.ecommerce.module.fulfillment.dto.LogisticsVO;
@@ -15,8 +14,11 @@ import com.john.ecommerce.module.trade.entity.Order;
 import com.john.ecommerce.module.trade.entity.OrderItem;
 import com.john.ecommerce.module.trade.mapper.OrderItemMapper;
 import com.john.ecommerce.module.trade.mapper.OrderMapper;
+import com.john.ecommerce.module.trade.port.OrderLifecyclePort;
+import com.john.ecommerce.module.trade.port.command.CompleteCommand;
+import com.john.ecommerce.module.trade.port.command.DeliverCommand;
+import com.john.ecommerce.module.trade.port.command.ShipCommand;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,7 +40,7 @@ public class LogisticsService {
     private final LogisticsItemMapper logisticsItemMapper;
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
-    private final ObjectProvider<OrderCompleteHandler> orderCompleteHandlers;
+    private final OrderLifecyclePort orderLifecyclePort;
 
     @Transactional
     public LogisticsVO createShipment(LogisticsCreateDTO dto) {
@@ -83,11 +85,7 @@ public class LogisticsService {
                 logisticsOrderMapper.updateById(lo);
 
                 if (lo.getOrderId() != null) {
-                    Order order = orderMapper.selectById(lo.getOrderId());
-                    if (order != null && order.getStatus() < OrderStatus.DELIVERED.getCode()) {
-                        order.setStatus(OrderStatus.DELIVERED.getCode());
-                        orderMapper.updateById(order);
-                    }
+                    orderLifecyclePort.markDelivered(DeliverCommand.builder().orderId(lo.getOrderId()).build());
                 }
             } else {
                 lo.setStatus(1);
@@ -139,22 +137,11 @@ public class LogisticsService {
         }
     }
 
-    /**
-     * Called when buyer confirms receipt. Transitions order to COMPLETED
-     * and notifies downstream (e.g. settlement) via OrderCompleteHandler.
-     */
     @Transactional
     public void confirmReceipt(Long orderId) {
         Order order = orderMapper.selectById(orderId);
         if (order == null) throw new BizException("订单不存在");
-        if (order.getStatus() != OrderStatus.DELIVERED.getCode()
-                && order.getStatus() != OrderStatus.SHIPPED.getCode()) {
-            throw new BizException("当前订单状态不可确认收货");
-        }
-        order.setStatus(OrderStatus.COMPLETED.getCode());
-        orderMapper.updateById(order);
-
-        orderCompleteHandlers.forEach(h -> h.onOrderComplete(orderId));
+        orderLifecyclePort.markCompleted(CompleteCommand.builder().orderId(orderId).build());
     }
 
     public LogisticsVO getByOrderId(Long orderId) {
@@ -175,12 +162,11 @@ public class LogisticsService {
         int totalQty = allItems.stream().mapToInt(OrderItem::getQuantity).sum();
         int shippedQty = shippedItems.stream().mapToInt(LogisticsItem::getQty).sum();
 
-        if (shippedQty >= totalQty) {
-            order.setStatus(OrderStatus.SHIPPED.getCode());
-        } else if (shippedQty > 0) {
-            order.setStatus(OrderStatus.PARTIAL_SHIPPED.getCode());
-        }
-        orderMapper.updateById(order);
+        boolean allShipped = shippedQty >= totalQty;
+        orderLifecyclePort.markShipped(ShipCommand.builder()
+                .orderId(order.getId())
+                .allShipped(allShipped)
+                .build());
     }
 
     private LogisticsVO toVO(LogisticsOrder lo) {

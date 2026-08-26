@@ -31,4 +31,11 @@ class OrderStateMachineTest {
         assertThat(sm.canTransition(OrderStatus.PAID.getCode(), OrderStatus.PARTIAL_SHIPPED.getCode())).isTrue();
         assertThat(sm.canTransition(OrderStatus.PAID.getCode(), OrderStatus.REFUNDING.getCode())).isTrue();
     }
+
+    @Test
+    void refundingCanRestoreFulfillmentStates() {
+        assertThat(sm.canTransition(OrderStatus.REFUNDING.getCode(), OrderStatus.REFUNDED.getCode())).isTrue();
+        assertThat(sm.canTransition(OrderStatus.REFUNDING.getCode(), OrderStatus.SHIPPED.getCode())).isTrue();
+        assertThat(sm.canTransition(OrderStatus.REFUNDING.getCode(), OrderStatus.PARTIAL_SHIPPED.getCode())).isTrue();
+    }
 }

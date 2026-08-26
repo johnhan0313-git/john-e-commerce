@@ -7,7 +7,6 @@ import com.john.ecommerce.module.statistics.mapper.StatisticsMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,9 +33,9 @@ public class StatisticsService {
         }
         vo.setOrderCountByStatus(statusMap);
 
-        // GMV
-        BigDecimal gmv = statisticsMapper.gmvSum(tenantId);
-        vo.setGmv(gmv != null ? gmv : BigDecimal.ZERO);
+        // GMV (cents)
+        Long gmv = statisticsMapper.gmvSum(tenantId);
+        vo.setGmv(gmv != null ? gmv : 0L);
 
         // top skus
         List<Map<String, Object>> topRows = statisticsMapper.topSkusByQty(tenantId, 10);

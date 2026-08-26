@@ -27,7 +27,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -60,7 +59,7 @@ public class TestDataSeeder {
             Long warehouseId,
             Long spuId,
             Long skuId,
-            BigDecimal price,
+            Long price,
             int stockQty,
             Long shopId,
             Long merchantId
@@ -310,7 +309,7 @@ public class TestDataSeeder {
             spu.setDeleteFlag(0);
             spuMapper.insert(spu);
 
-            BigDecimal price = new BigDecimal("99.00");
+            Long price = 9900L;
             Sku sku = new Sku();
             sku.setSpuId(spu.getId());
             sku.setSkuCode("TEST-SKU-" + n);

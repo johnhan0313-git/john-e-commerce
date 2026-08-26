@@ -9,5 +9,5 @@ public class SkuSalesVO {
     private Long skuId;
     private String skuName;
     private Integer totalQty;
-    private BigDecimal totalAmount;
+    private Long totalAmount;
 }

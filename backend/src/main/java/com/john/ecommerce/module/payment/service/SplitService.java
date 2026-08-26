@@ -3,6 +3,8 @@ package com.john.ecommerce.module.payment.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.john.ecommerce.common.exception.BizException;
 import com.john.ecommerce.module.payment.channel.SplitChannel;
+import com.john.ecommerce.module.payment.dto.SplitDetailDTO;
+import com.john.ecommerce.module.payment.dto.SplitOrderVO;
 import com.john.ecommerce.module.payment.entity.SplitDetail;
 import com.john.ecommerce.module.payment.entity.SplitOrder;
 import com.john.ecommerce.module.payment.mapper.SplitDetailMapper;
@@ -23,10 +25,11 @@ public class SplitService {
     private final List<SplitChannel> splitChannels;
 
     @Transactional
-    public SplitOrder createSplit(Long paymentId, List<SplitDetail> details) {
-        if (details == null || details.isEmpty()) {
+    public SplitOrderVO createSplit(Long paymentId, List<SplitDetailDTO> detailDtos) {
+        if (detailDtos == null || detailDtos.isEmpty()) {
             throw new BizException("分账明细不能为空");
         }
+        List<SplitDetail> details = detailDtos.stream().map(this::fromDto).toList();
         long total = details.stream().mapToLong(d -> d.getAmount() != null ? d.getAmount() : 0L).sum();
         SplitOrder order = new SplitOrder();
         order.setPaymentId(paymentId);
@@ -34,11 +37,11 @@ public class SplitService {
         order.setChannelType("MOCK");
         order.setTotalAmount(total);
         order.setStatus(0);
-        return createSplit(order, details);
+        return toVO(createSplitInternal(order, details));
     }
 
     @Transactional
-    public SplitOrder createSplit(SplitOrder order, List<SplitDetail> details) {
+    public SplitOrder createSplitInternal(SplitOrder order, List<SplitDetail> details) {
         splitOrderMapper.insert(order);
         for (SplitDetail d : details) {
             d.setSplitOrderId(order.getId());
@@ -67,10 +70,37 @@ public class SplitService {
         splitOrderMapper.updateById(order);
     }
 
-    public List<SplitOrder> listByPayment(Long paymentId) {
+    public List<SplitOrderVO> listByPayment(Long paymentId) {
         return splitOrderMapper.selectList(new LambdaQueryWrapper<SplitOrder>()
-                .eq(SplitOrder::getPaymentId, paymentId)
-                .orderByDesc(SplitOrder::getCreatedAt));
+                        .eq(SplitOrder::getPaymentId, paymentId)
+                        .orderByDesc(SplitOrder::getCreatedAt))
+                .stream().map(this::toVO).toList();
+    }
+
+    private SplitDetail fromDto(SplitDetailDTO dto) {
+        SplitDetail d = new SplitDetail();
+        d.setReceiverType(dto.getReceiverType());
+        d.setReceiverId(dto.getReceiverId());
+        d.setReceiverAccount(dto.getReceiverAccount());
+        d.setAmount(dto.getAmount());
+        d.setDescription(dto.getDescription());
+        return d;
+    }
+
+    private SplitOrderVO toVO(SplitOrder o) {
+        SplitOrderVO vo = new SplitOrderVO();
+        vo.setId(o.getId());
+        vo.setSplitNo(o.getSplitNo());
+        vo.setPaymentId(o.getPaymentId());
+        vo.setSettlementId(o.getSettlementId());
+        vo.setChannelType(o.getChannelType());
+        vo.setChannelSplitNo(o.getChannelSplitNo());
+        vo.setTotalAmount(o.getTotalAmount());
+        vo.setStatus(o.getStatus());
+        vo.setConfirmedAt(o.getConfirmedAt());
+        vo.setExtra(o.getExtra());
+        vo.setCreatedAt(o.getCreatedAt());
+        return vo;
     }
 
     private SplitChannel resolveChannel(String channelType) {

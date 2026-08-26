@@ -16,7 +16,7 @@ public class Refund extends BaseEntity {
     private Long paymentId;
     private Long userId;
     @TableField("amount")
-    private BigDecimal amount;
+    private Long amount;
     private String reason;
     private Integer status;
     private Long refundedAt;

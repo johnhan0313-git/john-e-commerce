@@ -5,7 +5,10 @@ import { resolve } from 'path'
 export default defineConfig({
   plugins: [vue()],
   resolve: {
-    alias: { '@': resolve(__dirname, 'src') }
+    alias: {
+      '@': resolve(__dirname, 'src'),
+      '@john/fe-shared': resolve(__dirname, '../../packages/fe-shared/src'),
+    }
   },
   server: {
     host: true,

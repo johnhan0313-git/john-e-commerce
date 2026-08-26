@@ -16,8 +16,8 @@ public class SkuItemDTO {
     private String skuName;
     private Map<String, String> specValues;
     @NotNull(message = "价格不能为空")
-    private BigDecimal price;
-    private BigDecimal costPrice;
+    private Long price;
+    private Long costPrice;
     /** 创建=初始库存；编辑=覆盖可售库存（传则更新） */
     @Min(value = 0, message = "库存不能为负")
     private Integer initStock;

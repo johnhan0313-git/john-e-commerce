@@ -13,7 +13,7 @@ public class PurchaseOrderVO {
     private Long warehouseId;
     private Long refActivityId;
     private String status;
-    private BigDecimal totalAmount;
+    private Long totalAmount;
     private String remark;
     private Long approvedAt;
     private Long finishedAt;
@@ -26,6 +26,6 @@ public class PurchaseOrderVO {
         private Long skuId;
         private Integer qty;
         private Integer receivedQty;
-        private BigDecimal price;
+        private Long price;
     }
 }

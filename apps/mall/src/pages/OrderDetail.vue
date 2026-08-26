@@ -14,8 +14,8 @@
     </div>
 
     <div class="card block">
-      <div class="kv"><span>应付</span><strong class="price">¥{{ order.payAmount ?? 0 }}</strong></div>
-      <div class="kv"><span>已付</span><strong>¥{{ order.paidAmount ?? 0 }}</strong></div>
+      <div class="kv"><span>应付</span><strong class="price">¥{{ formatCents(order.payAmount ?? 0) }}</strong></div>
+      <div class="kv"><span>已付</span><strong>¥{{ formatCents(order.paidAmount ?? 0) }}</strong></div>
       <div class="kv"><span>订单组</span><span>{{ order.orderGroupNo || '—' }}</span></div>
     </div>
 
@@ -26,7 +26,7 @@
           <strong>{{ item.skuName || item.skuId }}</strong>
           <p class="muted">× {{ item.quantity }}</p>
         </div>
-        <span class="price">¥{{ item.payAmount ?? item.subtotal ?? item.price }}</span>
+        <span class="price">¥{{ formatCents(item.payAmount ?? item.subtotal ?? item.price) }}</span>
       </div>
       <div v-if="!(order.items || []).length" class="empty">无明细</div>
     </div>
@@ -37,6 +37,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import client from '@/api/client'
+import { formatCents } from '@john/fe-shared/money'
 import type { Order, R } from '@/types'
 
 const route = useRoute()

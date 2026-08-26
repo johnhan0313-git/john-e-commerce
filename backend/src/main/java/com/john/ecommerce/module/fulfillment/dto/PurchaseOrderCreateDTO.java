@@ -25,6 +25,6 @@ public class PurchaseOrderCreateDTO {
         @NotNull(message = "数量不能为空")
         private Integer qty;
         @NotNull(message = "单价不能为空")
-        private BigDecimal price;
+        private Long price;
     }
 }

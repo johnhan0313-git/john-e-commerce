@@ -9,7 +9,6 @@ import com.john.ecommerce.module.payment.mapper.PayRouteRuleMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Component
@@ -19,7 +18,7 @@ public class CashierRouter {
     private final PayRouteRuleMapper routeRuleMapper;
     private final PayChannelConfigMapper channelConfigMapper;
 
-    public PayChannelConfig route(Long tenantId, String methodCode, String scene, BigDecimal amount) {
+    public PayChannelConfig route(Long tenantId, String methodCode, String scene, Long amount) {
         List<PayRouteRule> rules = routeRuleMapper.selectList(new LambdaQueryWrapper<PayRouteRule>()
                 .eq(PayRouteRule::getMethodCode, methodCode)
                 .eq(PayRouteRule::getStatus, 1)

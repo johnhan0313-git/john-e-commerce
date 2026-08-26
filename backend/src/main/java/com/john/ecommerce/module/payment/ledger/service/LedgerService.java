@@ -3,6 +3,11 @@ package com.john.ecommerce.module.payment.ledger.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.john.ecommerce.common.exception.BizException;
+import com.john.ecommerce.module.payment.dto.LedgerAccountOpenDTO;
+import com.john.ecommerce.module.payment.dto.LedgerAccountVO;
+import com.john.ecommerce.module.payment.dto.LedgerCreditDTO;
+import com.john.ecommerce.module.payment.dto.LedgerFlowVO;
+import com.john.ecommerce.module.payment.dto.LedgerTxnVO;
 import com.john.ecommerce.module.payment.ledger.entity.LedgerAccount;
 import com.john.ecommerce.module.payment.ledger.entity.LedgerFlow;
 import com.john.ecommerce.module.payment.ledger.entity.LedgerTxn;
@@ -137,6 +142,102 @@ public class LedgerService {
                 .eq(refId != null, LedgerTxn::getRefId, refId)
                 .orderByDesc(LedgerTxn::getCreatedAt);
         return txnMapper.selectPage(new Page<>(page, size), w);
+    }
+
+    @Transactional
+    public LedgerAccountVO openAccount(LedgerAccountOpenDTO dto) {
+        return toAccountVO(openAccount(dto.getOwnerType(), dto.getOwnerId(), dto.getAccountType(), dto.getCurrency()));
+    }
+
+    public LedgerAccountVO getAccountVO(Long id) {
+        LedgerAccount account = getById(id);
+        if (account == null) throw new BizException("账本账户不存在");
+        return toAccountVO(account);
+    }
+
+    public Page<LedgerAccountVO> listAccountVOs(int page, int size, String ownerType, Long ownerId) {
+        Page<LedgerAccount> p = listAccounts(page, size, ownerType, ownerId);
+        Page<LedgerAccountVO> result = new Page<>();
+        result.setTotal(p.getTotal());
+        result.setCurrent(p.getCurrent());
+        result.setSize(p.getSize());
+        result.setRecords(p.getRecords().stream().map(this::toAccountVO).toList());
+        return result;
+    }
+
+    @Transactional
+    public void credit(Long accountId, LedgerCreditDTO dto) {
+        long amount = dto.getAmount() != null ? dto.getAmount() : 0L;
+        String remark = dto.getRemark() != null ? dto.getRemark() : "手动充值";
+        credit(accountId, amount, "RECHARGE", "MANUAL", null, remark);
+    }
+
+    public Page<LedgerFlowVO> listFlowVOs(int page, int size, Long accountId) {
+        Page<LedgerFlow> p = listFlows(page, size, accountId);
+        Page<LedgerFlowVO> result = new Page<>();
+        result.setTotal(p.getTotal());
+        result.setCurrent(p.getCurrent());
+        result.setSize(p.getSize());
+        result.setRecords(p.getRecords().stream().map(this::toFlowVO).toList());
+        return result;
+    }
+
+    public Page<LedgerTxnVO> listTxnVOs(int page, int size, String refType, Long refId) {
+        Page<LedgerTxn> p = listTxns(page, size, refType, refId);
+        Page<LedgerTxnVO> result = new Page<>();
+        result.setTotal(p.getTotal());
+        result.setCurrent(p.getCurrent());
+        result.setSize(p.getSize());
+        result.setRecords(p.getRecords().stream().map(this::toTxnVO).toList());
+        return result;
+    }
+
+    public LedgerAccountVO toAccountVO(LedgerAccount a) {
+        LedgerAccountVO vo = new LedgerAccountVO();
+        vo.setId(a.getId());
+        vo.setOwnerType(a.getOwnerType());
+        vo.setOwnerId(a.getOwnerId());
+        vo.setAccountType(a.getAccountType());
+        vo.setCurrency(a.getCurrency());
+        vo.setBalance(a.getBalance());
+        vo.setFrozen(a.getFrozen());
+        vo.setAvailable(a.getAvailable());
+        vo.setStatus(a.getStatus());
+        vo.setCreatedAt(a.getCreatedAt());
+        return vo;
+    }
+
+    private LedgerFlowVO toFlowVO(LedgerFlow f) {
+        LedgerFlowVO vo = new LedgerFlowVO();
+        vo.setId(f.getId());
+        vo.setLedgerAccountId(f.getLedgerAccountId());
+        vo.setTxnId(f.getTxnId());
+        vo.setDirection(f.getDirection());
+        vo.setAmount(f.getAmount());
+        vo.setBalanceBefore(f.getBalanceBefore());
+        vo.setBalanceAfter(f.getBalanceAfter());
+        vo.setBizType(f.getBizType());
+        vo.setRefType(f.getRefType());
+        vo.setRefId(f.getRefId());
+        vo.setRemark(f.getRemark());
+        vo.setCreatedAt(f.getCreatedAt());
+        return vo;
+    }
+
+    private LedgerTxnVO toTxnVO(LedgerTxn t) {
+        LedgerTxnVO vo = new LedgerTxnVO();
+        vo.setId(t.getId());
+        vo.setTxnNo(t.getTxnNo());
+        vo.setTxnType(t.getTxnType());
+        vo.setAmount(t.getAmount());
+        vo.setCurrency(t.getCurrency());
+        vo.setStatus(t.getStatus());
+        vo.setBizType(t.getBizType());
+        vo.setRefType(t.getRefType());
+        vo.setRefId(t.getRefId());
+        vo.setRemark(t.getRemark());
+        vo.setCreatedAt(t.getCreatedAt());
+        return vo;
     }
 
     private LedgerAccount getAndLock(Long accountId) {

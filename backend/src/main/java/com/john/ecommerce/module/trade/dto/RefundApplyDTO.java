@@ -14,7 +14,7 @@ import jakarta.validation.constraints.NotEmpty;
 public class RefundApplyDTO {
     @NotNull
     @DecimalMin(value = "0.01")
-    private BigDecimal amount;
+    private Long amount;
     private String reason;
     @Valid
     @NotEmpty(message = "退款商品不能为空")

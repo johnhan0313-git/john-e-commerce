@@ -17,7 +17,7 @@
             · {{ o.payStatusLabel || `支付 ${o.payStatus}` }}
           </p>
         </div>
-        <span class="price">¥{{ o.payAmount ?? o.totalAmount ?? 0 }}</span>
+        <span class="price">¥{{ formatCents(o.payAmount ?? o.totalAmount ?? 0) }}</span>
       </router-link>
     </div>
   </section>
@@ -26,6 +26,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import client from '@/api/client'
+import { formatCents } from '@john/fe-shared/money'
 import type { Order, PageResult, R } from '@/types'
 
 const orders = ref<Order[]>([])

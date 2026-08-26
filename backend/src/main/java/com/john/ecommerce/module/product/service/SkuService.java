@@ -2,7 +2,7 @@ package com.john.ecommerce.module.product.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.john.ecommerce.common.exception.BizException;
-import com.john.ecommerce.module.fulfillment.service.inventory.InventoryFacade;
+import com.john.ecommerce.module.fulfillment.port.inventory.InventoryPort;
 import com.john.ecommerce.module.product.dto.SkuCreateDTO;
 import com.john.ecommerce.module.product.dto.SkuVO;
 import com.john.ecommerce.module.product.entity.Sku;
@@ -25,7 +25,7 @@ public class SkuService {
 
     private final SkuMapper skuMapper;
     private final SpuMapper spuMapper;
-    private final InventoryFacade inventoryFacade;
+    private final InventoryPort inventoryPort;
 
     public SkuVO create(SkuCreateDTO dto) {
         requireSpu(dto.getSpuId());
@@ -42,7 +42,7 @@ public class SkuService {
         sku.setStatus(dto.getStatus() != null ? dto.getStatus() : 1);
         skuMapper.insert(sku);
         int initStock = dto.getInitStock() != null ? dto.getInitStock() : 0;
-        inventoryFacade.initOrSetAvailable(DEFAULT_WAREHOUSE_ID, sku.getId(), initStock);
+        inventoryPort.initOrSetAvailable(DEFAULT_WAREHOUSE_ID, sku.getId(), initStock);
         return toVO(sku);
     }
 
@@ -59,7 +59,7 @@ public class SkuService {
         if (dto.getStatus() != null) sku.setStatus(dto.getStatus());
         skuMapper.updateById(sku);
         if (dto.getInitStock() != null) {
-            inventoryFacade.initOrSetAvailable(DEFAULT_WAREHOUSE_ID, sku.getId(), dto.getInitStock());
+            inventoryPort.initOrSetAvailable(DEFAULT_WAREHOUSE_ID, sku.getId(), dto.getInitStock());
         }
         return toVO(sku);
     }
@@ -72,7 +72,7 @@ public class SkuService {
         List<Sku> skus = skuMapper.selectList(new LambdaQueryWrapper<Sku>()
                 .eq(Sku::getSpuId, spuId)
                 .orderByAsc(Sku::getId));
-        Map<Long, Integer> avail = inventoryFacade.getAvailableBatch(
+        Map<Long, Integer> avail = inventoryPort.getAvailableBatch(
                 DEFAULT_WAREHOUSE_ID,
                 skus.stream().map(Sku::getId).collect(Collectors.toList()));
         return skus.stream().map(s -> toVO(s, avail.getOrDefault(s.getId(), 0))).toList();
@@ -96,7 +96,7 @@ public class SkuService {
     }
 
     private SkuVO toVO(Sku s) {
-        return toVO(s, inventoryFacade.getAvailable(DEFAULT_WAREHOUSE_ID, s.getId()));
+        return toVO(s, inventoryPort.getAvailable(DEFAULT_WAREHOUSE_ID, s.getId()));
     }
 
     private SkuVO toVO(Sku s, int available) {

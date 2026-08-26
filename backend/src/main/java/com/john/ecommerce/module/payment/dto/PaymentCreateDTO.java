@@ -23,6 +23,6 @@ public class PaymentCreateDTO {
         private Long orderId;
         @NotNull(message = "支付金额不能为空")
         @DecimalMin(value = "0.01", message = "支付金额必须大于0")
-        private BigDecimal amount;
+        private Long amount;
     }
 }

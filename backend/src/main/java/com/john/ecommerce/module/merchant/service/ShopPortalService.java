@@ -21,8 +21,8 @@ import com.john.ecommerce.module.trade.dto.OrderVO;
 import com.john.ecommerce.module.trade.entity.Order;
 import com.john.ecommerce.module.trade.mapper.OrderMapper;
 import com.john.ecommerce.module.trade.service.OrderService;
-import com.john.ecommerce.module.payment.entity.SettlementBill;
-import com.john.ecommerce.module.payment.entity.SettlementOrder;
+import com.john.ecommerce.module.payment.dto.SettlementBillVO;
+import com.john.ecommerce.module.payment.dto.SettlementOrderVO;
 import com.john.ecommerce.module.payment.service.SettlementBillService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -115,12 +115,12 @@ public class ShopPortalService {
         return logisticsService.createShipment(dto);
     }
 
-    public Page<SettlementBill> listSettlementBills(int page, int size) {
+    public Page<SettlementBillVO> listSettlementBills(int page, int size) {
         Shop shop = merchantService.requireCurrentShop();
         return settlementBillService.listBillsForShop(page, size, shop.getId());
     }
 
-    public Page<SettlementOrder> listSettlementOrders(int page, int size) {
+    public Page<SettlementOrderVO> listSettlementOrders(int page, int size) {
         Shop shop = merchantService.requireCurrentShop();
         return settlementBillService.listOrdersForShop(page, size, shop.getId());
     }

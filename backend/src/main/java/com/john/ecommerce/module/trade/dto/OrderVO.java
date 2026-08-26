@@ -18,10 +18,10 @@ public class OrderVO {
     private Integer status;
     private String statusLabel;
     private String splitReason;
-    private BigDecimal totalAmount;
-    private BigDecimal discountAmount;
-    private BigDecimal payAmount;
-    private BigDecimal paidAmount;
+    private Long totalAmount;
+    private Long discountAmount;
+    private Long payAmount;
+    private Long paidAmount;
     private Integer payStatus;
     private String payStatusLabel;
     private Integer payType;
@@ -46,10 +46,10 @@ public class OrderVO {
         private String skuName;
         private String skuImage;
         private Map<String, String> specValues;
-        private BigDecimal price;
+        private Long price;
         private Integer quantity;
-        private BigDecimal subtotal;
-        private BigDecimal discountAmount;
-        private BigDecimal payAmount;
+        private Long subtotal;
+        private Long discountAmount;
+        private Long payAmount;
     }
 }

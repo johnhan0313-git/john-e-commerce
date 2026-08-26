@@ -24,7 +24,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -51,7 +50,7 @@ public class ActivityService {
         activity.setRuleConfig(dto.getRuleConfig());
         activity.setBudget(dto.getBudget());
         activity.setTotalQuota(dto.getTotalQuota());
-        activity.setUsedBudget(BigDecimal.ZERO);
+        activity.setUsedBudget(0L);
         activity.setUsedQuota(0);
         activity.setStackable(true);
         activity.setPromoStage("order");
@@ -129,7 +128,8 @@ public class ActivityService {
             pl.setMerchantId(spu.getMerchantId());
             pl.setQuantity(line.getQuantity());
             pl.setUnitPrice(sku.getPrice());
-            pl.setLineTotal(sku.getPrice().multiply(BigDecimal.valueOf(line.getQuantity())));
+            long unit = sku.getPrice() != null ? sku.getPrice() : 0L;
+            pl.setLineTotal(unit * line.getQuantity());
             context.getLines().add(pl);
         }
         return promoEngine.preview(context);

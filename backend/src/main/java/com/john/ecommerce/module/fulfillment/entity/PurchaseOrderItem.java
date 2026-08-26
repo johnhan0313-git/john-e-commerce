@@ -15,5 +15,5 @@ public class PurchaseOrderItem extends BaseEntity {
     private Long skuId;
     private Integer qty;
     private Integer receivedQty;
-    private BigDecimal price;
+    private Long price;
 }

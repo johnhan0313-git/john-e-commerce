@@ -1,20 +1,13 @@
 package com.john.ecommerce.module.payment.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.john.ecommerce.common.context.TenantContext;
 import com.john.ecommerce.common.context.UserContext;
-import com.john.ecommerce.common.enums.OrderStatus;
-import com.john.ecommerce.common.enums.PayStatus;
 import com.john.ecommerce.common.exception.BizException;
-import com.john.ecommerce.module.payment.channel.PayChannel;
-import com.john.ecommerce.module.payment.channel.PaymentContext;
-import com.john.ecommerce.module.payment.channel.PrepayResult;
-import com.john.ecommerce.module.payment.dto.PaymentCreateDTO;
+import com.john.ecommerce.module.payment.application.CompletePaymentApplication;
 import com.john.ecommerce.module.payment.dto.PaymentVO;
-import com.john.ecommerce.module.payment.entity.*;
+import com.john.ecommerce.module.payment.entity.Payment;
+import com.john.ecommerce.module.payment.entity.PaymentItem;
 import com.john.ecommerce.module.payment.enums.PaymentStatus;
-import com.john.ecommerce.module.fulfillment.service.inventory.InventoryFacade;
 import com.john.ecommerce.module.payment.mapper.PaymentItemMapper;
 import com.john.ecommerce.module.payment.mapper.PaymentMapper;
 import com.john.ecommerce.module.trade.entity.Order;
@@ -22,19 +15,15 @@ import com.john.ecommerce.module.trade.mapper.OrderMapper;
 import com.john.ecommerce.module.user.identity.IdentityCodes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.factory.annotation.Value;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -46,78 +35,8 @@ public class PaymentService {
 
     private final PaymentMapper paymentMapper;
     private final PaymentItemMapper paymentItemMapper;
-    private final CashierRouter cashierRouter;
-    private final List<PayChannel> payChannels;
     private final OrderMapper orderMapper;
-    private final SettlementService settlementService;
-    private final InventoryFacade inventoryFacade;
-
-    @Transactional
-    public PaymentVO createPayment(PaymentCreateDTO dto) {
-        Long tenantId = TenantContext.getTenantId();
-        Long userId = requireUserId();
-        Set<Long> orderIds = new HashSet<>();
-        BigDecimal totalAmount = BigDecimal.ZERO;
-        for (PaymentCreateDTO.Item item : dto.getItems()) {
-            if (!orderIds.add(item.getOrderId())) {
-                throw new BizException("支付项包含重复订单");
-            }
-            Order order = orderMapper.selectById(item.getOrderId());
-            if (order == null || !userId.equals(order.getUserId())) {
-                throw new BizException(403, "无权支付该订单");
-            }
-            if (order.getStatus() == null || order.getStatus() != OrderStatus.PENDING.getCode()
-                    || order.getPayStatus() == null || order.getPayStatus() == PayStatus.PAID.getCode()) {
-                throw new BizException("订单当前不可支付");
-            }
-            if (order.getPayDeadline() != null && order.getPayDeadline() <= System.currentTimeMillis()) {
-                throw new BizException("订单已超过支付期限");
-            }
-            BigDecimal paid = order.getPaidAmount() != null ? order.getPaidAmount() : BigDecimal.ZERO;
-            BigDecimal remaining = order.getPayAmount().subtract(paid);
-            if (remaining.signum() <= 0 || item.getAmount().compareTo(remaining) != 0) {
-                throw new BizException("支付金额与订单剩余应付金额不一致");
-            }
-            totalAmount = totalAmount.add(remaining);
-        }
-
-        PayChannelConfig config = cashierRouter.route(tenantId, dto.getMethodCode(), null, totalAmount);
-
-        Payment payment = new Payment();
-        payment.setPayNo(UUID.randomUUID().toString().replace("-", ""));
-        payment.setMethodCode(dto.getMethodCode());
-        payment.setPayAccountId(config.getPayAccountId());
-        payment.setChannelConfigId(config.getId());
-        payment.setChannelType(config.getChannelType());
-        payment.setCurrency(dto.getCurrency() != null ? dto.getCurrency() : "CNY");
-        payment.setAmount(totalAmount);
-        payment.setStatus(PaymentStatus.PENDING.getCode());
-        paymentMapper.insert(payment);
-
-        for (PaymentCreateDTO.Item item : dto.getItems()) {
-            PaymentItem pi = new PaymentItem();
-            pi.setPaymentId(payment.getId());
-            pi.setOrderId(item.getOrderId());
-            pi.setAmount(item.getAmount());
-            paymentItemMapper.insert(pi);
-        }
-
-        PayChannel channel = resolveChannel(config.getChannelType());
-        PaymentContext ctx = new PaymentContext();
-        ctx.setPayment(payment);
-        ctx.setConfig(config);
-        PrepayResult result = channel.prepay(ctx);
-
-        if (result.isSuccess()) {
-            payment.setStatus(PaymentStatus.PROCESSING.getCode());
-            payment.setChannelTradeNo(result.getChannelTradeNo());
-        } else {
-            payment.setStatus(PaymentStatus.FAILED.getCode());
-        }
-        paymentMapper.updateById(payment);
-
-        return toVO(payment);
-    }
+    private final CompletePaymentApplication completePaymentApplication;
 
     @Transactional
     public void mockCallback(String payNo) {
@@ -134,51 +53,7 @@ public class PaymentService {
             throw new BizException("支付单当前状态不可完成");
         }
 
-        completePayment(payment);
-    }
-
-    private void completePayment(Payment payment) {
-        long paidAt = System.currentTimeMillis();
-        int claimed = paymentMapper.update(null, new LambdaUpdateWrapper<Payment>()
-                .eq(Payment::getId, payment.getId())
-                .in(Payment::getStatus, PaymentStatus.PENDING.getCode(), PaymentStatus.PROCESSING.getCode())
-                .set(Payment::getStatus, PaymentStatus.SUCCESS.getCode())
-                .set(Payment::getPaidAt, paidAt));
-        if (claimed == 0) return;
-        payment.setStatus(PaymentStatus.SUCCESS.getCode());
-        payment.setPaidAt(paidAt);
-
-        List<PaymentItem> items = paymentItemMapper.selectList(new LambdaQueryWrapper<PaymentItem>()
-                .eq(PaymentItem::getPaymentId, payment.getId()));
-
-        for (PaymentItem item : items) {
-            Order order = orderMapper.selectById(item.getOrderId());
-            if (order != null) {
-                BigDecimal newPaid = (order.getPaidAmount() != null ? order.getPaidAmount() : BigDecimal.ZERO)
-                        .add(item.getAmount());
-                order.setPaidAmount(newPaid);
-                boolean fullyPaid = newPaid.compareTo(order.getPayAmount()) >= 0;
-                order.setPayStatus(fullyPaid ? PayStatus.PAID.getCode() : PayStatus.PARTIAL.getCode());
-                order.setPayNo(payment.getPayNo());
-                order.setPayTime(payment.getPaidAt());
-                // 付清且仍为待支付：推进已支付并扣减锁定库存；已取消等状态不再 consume
-                boolean shouldConsume = fullyPaid && order.getStatus() != null
-                        && order.getStatus() == OrderStatus.PENDING.getCode();
-                if (shouldConsume) {
-                    order.setStatus(OrderStatus.PAID.getCode());
-                } else if (fullyPaid && order.getStatus() != null
-                        && order.getStatus() != OrderStatus.PENDING.getCode()) {
-                    log.warn("支付成功但订单非待支付，跳过库存扣减 orderId={} status={}",
-                            order.getId(), order.getStatus());
-                }
-                orderMapper.updateById(order);
-                if (shouldConsume) {
-                    inventoryFacade.consumeForOrder(order);
-                }
-            }
-
-            settlementService.createSettlementOrder(payment, item, "FORWARD");
-        }
+        completePaymentApplication.complete(payment);
     }
 
     private String hmacSha256(String payload, String secret) {
@@ -226,8 +101,7 @@ public class PaymentService {
                 && payment.getStatus() != PaymentStatus.PENDING.getCode()) {
             throw new BizException("支付单当前状态不可完成");
         }
-        // Channel callbacks share the same idempotent settlement path as the mock channel.
-        completePayment(payment);
+        completePaymentApplication.complete(payment);
     }
 
     public PaymentVO getById(Long id) {
@@ -256,13 +130,6 @@ public class PaymentService {
         Long userId = UserContext.getCurrentUserId();
         if (userId == null) throw new BizException(401, "用户未登录");
         return userId;
-    }
-
-    private PayChannel resolveChannel(String channelType) {
-        return payChannels.stream()
-                .filter(c -> c.supports(channelType))
-                .findFirst()
-                .orElseThrow(() -> new BizException("不支持的渠道: " + channelType));
     }
 
     private PaymentVO toVO(Payment p) {
